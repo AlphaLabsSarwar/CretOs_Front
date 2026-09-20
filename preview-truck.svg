@@ -1,0 +1,56 @@
+<svg width="520" height="240" xmlns="http://www.w3.org/2000/svg" style="background:white">
+  <g transform="translate(520,0) scale(-1,1) scale(2)">
+    <defs>
+      <clipPath id="rmc-drum-clip-preview">
+        <path d="M70,72 L80,42 L110,28 L170,22 L220,28 L244,44 L248,62 L232,80 L150,86 L95,84 Z" />
+      </clipPath>
+    </defs>
+
+    <ellipse cx="140" cy="112" rx="112" ry="4.5" fill="#E5E7EB" />
+
+    <rect x="71" y="16" width="4" height="24" rx="1" fill="#6B7280" />
+    <circle cx="73" cy="15" r="2.4" fill="#D1D5DB" />
+
+    <path d="M6,96 L6,64 L16,46 L30,38 L52,38 L62,46 L70,46 L70,96 Z" fill="#E8630A" />
+    <path d="M18,50 L30,42 L50,42 L56,50 L56,64 L18,64 Z" fill="#FDF0E8" />
+    <rect x="9" y="80" width="1.4" height="12" fill="#FDF0E8" opacity="0.7" />
+    <rect x="12.5" y="80" width="1.4" height="12" fill="#FDF0E8" opacity="0.7" />
+
+    <rect x="68" y="88" width="172" height="8" fill="#4B5563" />
+    <path d="M82,88 L90,70 L94,70 L88,88 Z" fill="#374151" />
+    <path d="M100,88 L106,72 L110,72 L106,88 Z" fill="#374151" />
+
+    <path d="M170,88 Q200,64 232,88" stroke="#374151" stroke-width="5" fill="none" />
+
+    <path d="M70,72 L80,42 L110,28 L170,22 L220,28 L244,44 L248,62 L232,80 L150,86 L95,84 Z" fill="#CF560A" />
+    <g clip-path="url(#rmc-drum-clip-preview)">
+      <path d="M70,5 L100,5 L60,105 L30,105 Z" fill="#FDF0E8" opacity="0.8" />
+      <path d="M140,5 L170,5 L130,105 L100,105 Z" fill="#FDF0E8" opacity="0.55" />
+      <path d="M210,5 L240,5 L200,105 L170,105 Z" fill="#FDF0E8" opacity="0.35" />
+    </g>
+    <path d="M70,72 L80,42 L110,28 L170,22 L220,28 L244,44 L248,62 L232,80 L150,86 L95,84 Z" fill="none" stroke="#FFB98A" stroke-width="0.8" opacity="0.5" />
+
+    <path d="M243,55 L248,60 L243,64 L248,68" stroke="#374151" stroke-width="1.8" fill="none" stroke-linecap="round" />
+    <path d="M236,66 L254,70 L248,100 L240,96 Z" fill="#374151" />
+
+    <g>
+      <circle cx="46" cy="96" r="15" fill="#1F2937" />
+      <rect x="45" y="81" width="2" height="6" fill="#9CA3AF" opacity="0.8" />
+      <circle cx="46" cy="96" r="6" fill="#E8630A" />
+    </g>
+    <g>
+      <circle cx="186" cy="96" r="15" fill="#1F2937" />
+      <rect x="185" y="81" width="2" height="6" fill="#9CA3AF" opacity="0.8" />
+      <circle cx="186" cy="96" r="6" fill="#E8630A" />
+    </g>
+    <g>
+      <circle cx="214" cy="96" r="15" fill="#1F2937" />
+      <rect x="213" y="81" width="2" height="6" fill="#9CA3AF" opacity="0.8" />
+      <circle cx="214" cy="96" r="6" fill="#E8630A" />
+    </g>
+
+    <circle cx="26" cy="102" r="3.4" fill="#D1D5DB" />
+    <circle cx="22" cy="99" r="2.3" fill="#D1D5DB" />
+    <circle cx="18" cy="103" r="1.8" fill="#D1D5DB" />
+  </g>
+</svg>

@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply border-gray-200; }
+  body {
+    @apply bg-gray-50 text-gray-900 text-sm;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { @apply font-semibold; }
+}
+
+@layer components {
+  .table-num { @apply font-mono text-right tabular-nums; }
+  .status-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .page-title { @apply text-lg font-semibold text-gray-900; }
+  .section-label { @apply text-xs uppercase tracking-wider text-gray-400 font-medium; }
+  .field-label { @apply text-xs text-gray-500 mb-1 block; }
+  .form-input {
+    @apply w-full h-9 px-3 border border-gray-300 rounded-lg text-sm
+           focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent;
+  }
+  .row-actions { @apply opacity-0 transition-opacity; }
+  tr:hover .row-actions { @apply opacity-100; }
+  .sidebar-item {
+    @apply flex items-center gap-2.5 px-4 py-2 text-sm rounded-none
+           text-sidebar-text hover:text-white hover:bg-sidebar-item hover:pl-[18px]
+           transition-all duration-150 cursor-pointer;
+  }
+  .sidebar-item.active {
+    @apply text-white bg-sidebar-item border-l-[3px] border-accent;
+  }
+  .sidebar-subitem {
+    @apply flex items-center gap-2 pl-10 pr-4 py-1.5 text-xs
+           text-sidebar-text hover:text-white hover:bg-sidebar-item hover:pl-11
+           transition-all duration-150 cursor-pointer rounded-none;
+  }
+  .sidebar-subitem.active { @apply text-white; }
+
+  /* Reusable hover-lift for card-style containers (panels, summary bars) */
+  .card-lift { @apply transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  /* Explicit A4 — every print document (invoice, statement, challan, PO,
+     GRN, quotation, lab report) is designed to this page size, and some
+     browsers/OS print-dialog defaults are Letter, not A4. */
+  @page { size: A4; margin: 12mm; }
+}

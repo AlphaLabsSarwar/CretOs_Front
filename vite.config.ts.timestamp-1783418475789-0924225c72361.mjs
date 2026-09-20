@@ -1,0 +1,14 @@
+// vite.config.ts
+import { defineConfig } from "file:///sessions/eloquent-loving-keller/mnt/cretos/node_modules/vite/dist/node/index.js";
+import react from "file:///sessions/eloquent-loving-keller/mnt/cretos/node_modules/@vitejs/plugin-react/dist/index.js";
+import path from "path";
+var __vite_injected_original_dirname = "/sessions/eloquent-loving-keller/mnt/cretos/apps/web";
+var vite_config_default = defineConfig({
+  plugins: [react()],
+  resolve: { alias: { "@": path.resolve(__vite_injected_original_dirname, "./src") } },
+  server: { port: 5173, proxy: { "/api": "http://localhost:3001" } }
+});
+export {
+  vite_config_default as default
+};
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAic291cmNlcyI6IFsidml0ZS5jb25maWcudHMiXSwKICAic291cmNlc0NvbnRlbnQiOiBbImNvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9kaXJuYW1lID0gXCIvc2Vzc2lvbnMvZWxvcXVlbnQtbG92aW5nLWtlbGxlci9tbnQvY3JldG9zL2FwcHMvd2ViXCI7Y29uc3QgX192aXRlX2luamVjdGVkX29yaWdpbmFsX2ZpbGVuYW1lID0gXCIvc2Vzc2lvbnMvZWxvcXVlbnQtbG92aW5nLWtlbGxlci9tbnQvY3JldG9zL2FwcHMvd2ViL3ZpdGUuY29uZmlnLnRzXCI7Y29uc3QgX192aXRlX2luamVjdGVkX29yaWdpbmFsX2ltcG9ydF9tZXRhX3VybCA9IFwiZmlsZTovLy9zZXNzaW9ucy9lbG9xdWVudC1sb3Zpbmcta2VsbGVyL21udC9jcmV0b3MvYXBwcy93ZWIvdml0ZS5jb25maWcudHNcIjtpbXBvcnQgeyBkZWZpbmVDb25maWcgfSBmcm9tICd2aXRlJ1xuaW1wb3J0IHJlYWN0IGZyb20gJ0B2aXRlanMvcGx1Z2luLXJlYWN0J1xuaW1wb3J0IHBhdGggZnJvbSAncGF0aCdcblxuZXhwb3J0IGRlZmF1bHQgZGVmaW5lQ29uZmlnKHtcbiAgcGx1Z2luczogW3JlYWN0KCldLFxuICByZXNvbHZlOiB7IGFsaWFzOiB7ICdAJzogcGF0aC5yZXNvbHZlKF9fZGlybmFtZSwgJy4vc3JjJykgfSB9LFxuICBzZXJ2ZXI6IHsgcG9ydDogNTE3MywgcHJveHk6IHsgJy9hcGknOiAnaHR0cDovL2xvY2FsaG9zdDozMDAxJyB9IH0sXG59KVxuIl0sCiAgIm1hcHBpbmdzIjogIjtBQUE4VSxTQUFTLG9CQUFvQjtBQUMzVyxPQUFPLFdBQVc7QUFDbEIsT0FBTyxVQUFVO0FBRmpCLElBQU0sbUNBQW1DO0FBSXpDLElBQU8sc0JBQVEsYUFBYTtBQUFBLEVBQzFCLFNBQVMsQ0FBQyxNQUFNLENBQUM7QUFBQSxFQUNqQixTQUFTLEVBQUUsT0FBTyxFQUFFLEtBQUssS0FBSyxRQUFRLGtDQUFXLE9BQU8sRUFBRSxFQUFFO0FBQUEsRUFDNUQsUUFBUSxFQUFFLE1BQU0sTUFBTSxPQUFPLEVBQUUsUUFBUSx3QkFBd0IsRUFBRTtBQUNuRSxDQUFDOyIsCiAgIm5hbWVzIjogW10KfQo=
