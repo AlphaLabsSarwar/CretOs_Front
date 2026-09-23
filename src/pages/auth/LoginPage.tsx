@@ -19,11 +19,11 @@ export default function LoginPage() {
       const { token, user } = res.data.data
       authStore.setAuth(token, user)
       const modules = await permissionsStore.refresh()
-      // Land on Dashboard if granted, otherwise the operator's Quick Dispatch
-      // screen (always reachable regardless of module permissions) — this
-      // way an OPERATOR who's been granted the full dashboard by an admin
-      // lands there instead of being force-routed to Quick Dispatch.
-      navigate(modules.includes('dashboard') ? '/dashboard' : '/quick-dispatch')
+      // Land on the workspace launcher, unless the user has no granted
+      // modules at all — then it would be empty, so fall back to the
+      // operator's Quick Dispatch screen (always reachable regardless of
+      // module permissions).
+      navigate(modules.length ? '/home' : '/quick-dispatch')
     } catch {
       setError('Invalid email or password')
     } finally {

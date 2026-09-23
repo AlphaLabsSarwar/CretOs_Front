@@ -13,6 +13,7 @@ import { SHOW_TOUR_EVENT } from './lib/tourEvent'
 // its own chunk. React.lazy + Suspense below means a user only downloads
 // the JS for the screens they actually visit, instead of one >500kb bundle
 // up front. Grouped in the same order as the routes further down.
+const HomePage = lazy(() => import('./pages/home/HomePage'))
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'))
 // Sales
 const ChallanListPage = lazy(() => import('./pages/sales/ChallanListPage'))
@@ -109,6 +110,7 @@ const PermissionsPage = lazy(() => import('./pages/admin/PermissionsPage'))
 const ReportSchedulesPage = lazy(() => import('./pages/admin/ReportSchedulesPage'))
 // Fleet
 const FleetPage = lazy(() => import('./pages/fleet/FleetPage'))
+const LiveTrackingPage = lazy(() => import('./pages/tracking/LiveTrackingPage'))
 // Masters (extra)
 const CustomerStatementPage = lazy(() => import('./pages/masters/CustomerStatementPage'))
 const GradeCertificatePage = lazy(() => import('./pages/masters/GradeCertificatePage'))
@@ -236,8 +238,10 @@ export default function App() {
           <Route path="/quality/tests/:id/print" element={<ProtectedRoute><QualityTestPrintPage /></ProtectedRoute>} />
           {/* Loading-bay operator screen — minimal, single-purpose, no sidebar */}
           <Route path="/quick-dispatch" element={<ProtectedRoute><QuickDispatchPage /></ProtectedRoute>} />
+          {/* Workspace launcher — post-login landing; own top-bar chrome, no sidebar */}
+          <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/" element={<RequireFullAccess><AppLayout /></RequireFullAccess>}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<Navigate to="/home" replace />} />
             <Route path="dashboard" element={<RequireModule moduleKey="dashboard"><DashboardPage /></RequireModule>} />
             {/* Sales */}
             <Route path="sales/challans" element={<RequireModule moduleKey="sales.challans"><ChallanListPage /></RequireModule>} />
@@ -314,6 +318,7 @@ export default function App() {
             <Route path="reports/gstr-export" element={<RequireModule moduleKey="reports.gstrExport"><GstrExportPage /></RequireModule>} />
             {/* Fleet */}
             <Route path="fleet" element={<RequireModule moduleKey="fleet"><FleetPage /></RequireModule>} />
+            <Route path="tracking" element={<RequireModule moduleKey="fleet"><LiveTrackingPage /></RequireModule>} />
             {/* Admin */}
             <Route path="admin/audit-log" element={<RequireModule moduleKey="admin.auditLog"><AuditLogPage /></RequireModule>} />
             <Route path="admin/report-schedules" element={<RequireModule moduleKey="admin.reportSchedules"><ReportSchedulesPage /></RequireModule>} />

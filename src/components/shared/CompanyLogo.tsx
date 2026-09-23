@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import PrintTruckLogo from './PrintTruckLogo'
+import { companyLogoUrl, useCompanyLogoVersion } from '@/lib/companyLogo'
 
 // ─── Company brand mark ──────────────────────────────────────────────────
-// Renders the uploaded company logo (see Platform Admin > Companies > Edit,
-// routes/platform/companies.ts's POST /:id/logo) wherever the app used to
+// Renders the uploaded company logo (set by the company's Admin from the home
+// screen — components/branding/CompanyLogoSlot.tsx — or by the Platform Admin >
+// Companies > Edit) wherever the app used to
 // show the generic CretOS truck mark: the sidebar and all six print
 // documents. Falls back to PrintTruckLogo when the company hasn't uploaded
 // one yet (companyId missing, or the <img> 404s because logo_path is null —
@@ -15,18 +17,19 @@ import PrintTruckLogo from './PrintTruckLogo'
 // <img src> is far simpler than wiring auth-header plumbing into six print
 // pages plus the sidebar.
 export default function CompanyLogo({ companyId, width = 84, className }: { companyId?: string | null; width?: number; className?: string }) {
-  const [failed, setFailed] = useState(false)
+  const version = useCompanyLogoVersion(companyId)
+  const [failedVersion, setFailedVersion] = useState<string | null>(null)
 
-  if (!companyId || failed) return <PrintTruckLogo width={width} />
+  if (!companyId || failedVersion === version) return <PrintTruckLogo width={width} />
 
   return (
     <img
-      src={`/api/v1/public/companies/${companyId}/logo`}
+      src={companyLogoUrl(companyId)}
       alt="Company logo"
       width={width}
       style={{ maxWidth: width, maxHeight: width, objectFit: 'contain' }}
       className={className}
-      onError={() => setFailed(true)}
+      onError={() => setFailedVersion(version)}
     />
   )
 }

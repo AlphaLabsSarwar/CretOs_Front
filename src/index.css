@@ -24,6 +24,64 @@
     @apply w-full h-9 px-3 border border-gray-300 rounded-lg text-sm
            focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent;
   }
+  /* Home launcher workspace tile. Hover/keyboard-focus: lifts 4px, border turns
+     accent orange, soft raised shadow, and a pale-orange glow blooms behind the
+     icon — all 200ms ease-out. Colours live here (not as utilities) so the
+     hover border reliably beats the dark-theme border. */
+  .workspace-tile {
+    @apply border-gray-200 bg-white;
+    --tile-shadow: 0 14px 28px -12px rgb(232 99 10 / 0.35), 0 4px 10px -4px rgb(15 23 42 / 0.1);
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+  }
+  .dark .workspace-tile {
+    @apply border-slate-800 bg-slate-900;
+    --tile-shadow: 0 14px 28px -12px rgb(232 99 10 / 0.45), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+  }
+  .workspace-tile .tile-glow {
+    background: radial-gradient(circle, rgb(232 99 10 / 0.22) 0%, rgb(232 99 10 / 0.1) 45%, transparent 70%);
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+  }
+  .workspace-tile:focus-visible {
+    transform: translateY(-4px);
+    border-color: theme('colors.accent.DEFAULT');
+  }
+  .workspace-tile:focus-visible .tile-glow { opacity: 1; transform: scale(1); }
+  /* Hover only on devices that can hover, so a tap doesn't leave a tile "stuck" raised. */
+  @media (hover: hover) {
+    .workspace-tile:hover {
+      transform: translateY(-4px);
+      border-color: theme('colors.accent.DEFAULT');
+      box-shadow: var(--tile-shadow);
+    }
+    .workspace-tile:hover .tile-glow { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .workspace-tile, .workspace-tile .tile-glow { transition: none; }
+    .workspace-tile:hover, .workspace-tile:focus-visible { transform: none; }
+  }
+  /* Live Tracking map markers (components/tracking/TrackingMap.tsx). */
+  .trk-icon { background: none; border: none; }
+  .trk-marker { position: relative; width: 36px; height: 36px; }
+  .trk-badge {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    border: 2.5px solid #fff; border-radius: 9999px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+  }
+  .trk-plant .trk-badge, .trk-site .trk-badge { border-radius: 10px; }
+  .trk-marker.is-selected .trk-badge { transform: scale(1.18); box-shadow: 0 0 0 4px rgb(232 99 10 / 0.28), 0 2px 8px rgb(0 0 0 / 0.4); }
+  .trk-pulse { position: absolute; inset: 0; border-radius: 9999px; animation: trk-pulse 2.2s ease-out infinite; }
+  @keyframes trk-pulse { 0% { transform: scale(1); opacity: 0.45; } 100% { transform: scale(2.2); opacity: 0; } }
+  .trk-label {
+    position: absolute; top: 40px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+    padding: 3px 6px; border-radius: 6px; background: rgb(17 19 24 / 0.88); color: #fff;
+    font: 600 10.5px/1 'JetBrains Mono', ui-monospace, monospace;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .trk-pulse { display: none; }
+    .trk-badge { transition: none; }
+  }
   .row-actions { @apply opacity-0 transition-opacity; }
   tr:hover .row-actions { @apply opacity-100; }
   .sidebar-item {

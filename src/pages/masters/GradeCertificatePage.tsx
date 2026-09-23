@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Printer } from 'lucide-react'
 import { api } from '@/lib/api'
 import RmcLoader from '@/components/shared/RmcLoader'
+import CompanyLogo from '@/components/shared/CompanyLogo'
+import { authStore } from '@/store/auth'
 
 interface GradeCert {
   id: string
@@ -72,9 +74,14 @@ export default function GradeCertificatePage() {
       </div>
 
       <div className="rounded-xl border border-gray-300 p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-lg font-bold uppercase tracking-wide">Mix Design Certificate</h1>
-          <p className="text-xs text-gray-500">Concrete Mix Design — Materials & Proportions per m³</p>
+        {/* Logo left, title centred (an equal spacer on the right keeps the title truly centred) */}
+        <div className="mb-6 flex items-center gap-4">
+          <div className="w-[72px] shrink-0"><CompanyLogo companyId={authStore.getUser()?.company?.id} width={72} /></div>
+          <div className="flex-1 text-center">
+            <h1 className="text-lg font-bold uppercase tracking-wide">Mix Design Certificate</h1>
+            <p className="text-xs text-gray-500">Concrete Mix Design — Materials & Proportions per m³</p>
+          </div>
+          <div className="w-[72px] shrink-0" aria-hidden="true" />
         </div>
 
         <div className="mb-6 grid grid-cols-2 gap-3 text-sm">

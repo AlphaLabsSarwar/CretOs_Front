@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Calendar, ClipboardList, FileText, CreditCard, Receipt,
-  ShoppingCart, Package, Warehouse, Users, Building2, Car, FlaskConical, Plus, Search, CornerDownLeft,
+  ShoppingCart, Package, Warehouse, Users, Building2, Car, FlaskConical, Plus, Search, CornerDownLeft, MapPinned,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -56,6 +56,8 @@ const STATIC_COMMANDS: StaticCommand[] = [
 
   { id: 'nav-grades', label: 'Grade Master', group: 'Go to', path: '/masters/grades', icon: FlaskConical, keywords: 'mix design concrete lab' },
   { id: 'new-grade', label: 'New Grade', group: 'Create', path: '/masters/grades/new', icon: Plus },
+
+  { id: 'nav-tracking', label: 'Live Tracking', group: 'Go to', path: '/tracking', icon: MapPinned, keywords: 'trucks map gps fleet dispatch status location' },
 
   { id: 'nav-customers', label: 'Customers', group: 'Go to', path: '/masters/customers', icon: Users },
   { id: 'new-customer', label: 'New Customer', group: 'Create', path: '/masters/customers/new', icon: Plus },

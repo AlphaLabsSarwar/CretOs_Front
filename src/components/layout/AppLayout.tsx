@@ -4,10 +4,12 @@ import { Menu, Search } from 'lucide-react'
 import Sidebar from './Sidebar'
 import CommandPalette from '@/components/shared/CommandPalette'
 import ChatWidget from '@/components/shared/ChatWidget'
+import { recordRecent } from '@/lib/recent'
 
 function getBreadcrumb(path: string): string {
   const map: Record<string, string> = {
     '/dashboard': 'Dashboard',
+    '/tracking': 'Live Tracking',
     '/sales/challans': 'Sales / Dispatch Challan',
     '/sales/challans/new': 'Sales / Dispatch Challan / New',
     '/sales/schedules': 'Sales / Daily Schedule',
@@ -41,6 +43,8 @@ export default function AppLayout() {
   // drawer covering the new page on mobile.
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   useEffect(() => setMobileNavOpen(false), [location.pathname])
+  // Feeds "Recently opened" on the home launcher (see lib/recent.ts).
+  useEffect(() => recordRecent(location.pathname), [location.pathname])
 
   // ProductTour itself lives at the App root (see App.tsx), not here — the
   // tour navigates to /quick-dispatch, which is a route sibling of this

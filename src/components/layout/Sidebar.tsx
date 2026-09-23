@@ -1,122 +1,13 @@
 import { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import {
-  LayoutDashboard, Truck, Calendar, ClipboardList, FileText,
-  CreditCard, Receipt, ShoppingCart, Package, Warehouse,
-  Users, Building2, Car, FlaskConical, ChevronDown, ChevronRight,
-  LogOut, Settings, TrendingUp, Bell, ShieldCheck, HelpCircle, X, Factory
-} from 'lucide-react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { ArrowLeft, ChevronDown, ChevronRight, LogOut, HelpCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authStore } from '@/store/auth'
 import { permissionsStore } from '@/store/permissions'
 import { SHOW_TOUR_EVENT } from '@/lib/tourEvent'
-
-interface NavItem {
-  label: string
-  icon: React.ElementType
-  path?: string
-  moduleKey?: string
-  children?: { label: string; path: string; moduleKey: string }[]
-}
-
-// Every leaf here carries the module_key it corresponds to in
-// packages/shared/src/permissions.ts — visibility is resolved per-user by
-// the backend (GET /me/permissions), not hardcoded by role here anymore.
-const NAV: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', moduleKey: 'dashboard' },
-  {
-    label: 'Sales', icon: Truck,
-    children: [
-      { label: 'Dispatch Challan', path: '/sales/challans', moduleKey: 'sales.challans' },
-      { label: 'Daily Schedule', path: '/sales/schedules', moduleKey: 'sales.schedules' },
-      { label: 'Work Orders', path: '/sales/orders', moduleKey: 'sales.orders' },
-    ],
-  },
-  {
-    label: 'Marketing', icon: FileText,
-    children: [
-      { label: 'Tenders / RFQ', path: '/marketing/tenders', moduleKey: 'marketing.tenders' },
-      { label: 'Quotations', path: '/marketing/quotations', moduleKey: 'marketing.quotations' },
-    ],
-  },
-  {
-    label: 'Finance', icon: CreditCard,
-    children: [
-      { label: 'Invoices', path: '/finance/invoices', moduleKey: 'finance.invoices' },
-      { label: 'Payment Voucher', path: '/finance/payments', moduleKey: 'finance.payments' },
-      { label: 'Receipt Voucher', path: '/finance/receipts', moduleKey: 'finance.receipts' },
-      { label: 'Journal Entry', path: '/finance/journals', moduleKey: 'finance.journals' },
-      { label: 'Petty Cash Register', path: '/finance/cashbook', moduleKey: 'finance.cashbook' },
-    ],
-  },
-  {
-    label: 'Stores', icon: Warehouse,
-    children: [
-      { label: 'Purchase Order', path: '/stores/po', moduleKey: 'stores.po' },
-      { label: 'GRN', path: '/stores/grn', moduleKey: 'stores.grn' },
-      { label: 'Indent', path: '/stores/indents', moduleKey: 'stores.indents' },
-      { label: 'Raw Material Stock', path: '/stores/stock', moduleKey: 'stores.stock' },
-    ],
-  },
-  {
-    label: 'Concrete Lab', icon: FlaskConical,
-    children: [
-      { label: 'Grade Master', path: '/masters/grades', moduleKey: 'lab.grades' },
-      { label: 'Cube Test Results', path: '/quality/tests', moduleKey: 'lab.tests' },
-      { label: 'NCR / CAPA', path: '/quality/ncr', moduleKey: 'lab.ncr' },
-    ],
-  },
-  {
-    label: 'Production', icon: Factory,
-    children: [
-      { label: 'Weighbridge', path: '/production/weighbridge', moduleKey: 'production.weighbridge' },
-      { label: 'Batching / MES', path: '/production/batches', moduleKey: 'production.batching' },
-      { label: 'Plant Connectivity', path: '/production/connectivity', moduleKey: 'production.batching' },
-      { label: 'Material Reconciliation', path: '/production/reconciliation', moduleKey: 'production.reconciliation' },
-      { label: 'Concrete Age Monitor', path: '/production/concrete-age', moduleKey: 'production.concreteAge' },
-      { label: 'Pump Schedule', path: '/production/pumps', moduleKey: 'production.pumps' },
-      { label: 'OEE / Downtime', path: '/production/oee', moduleKey: 'production.oee' },
-      { label: 'Energy Management', path: '/production/energy', moduleKey: 'production.energy' },
-      { label: 'Carbon / Sustainability', path: '/production/carbon', moduleKey: 'production.carbon' },
-    ],
-  },
-  {
-    label: 'Masters', icon: Building2,
-    children: [
-      { label: 'Customers', path: '/masters/customers', moduleKey: 'masters.customers' },
-      { label: 'Rate Contracts', path: '/masters/customer-rates', moduleKey: 'masters.customerRates' },
-      { label: 'Materials', path: '/masters/items', moduleKey: 'masters.items' },
-      { label: 'Vendors', path: '/masters/vendors', moduleKey: 'masters.vendors' },
-      { label: 'Vehicles', path: '/masters/vehicles', moduleKey: 'masters.vehicles' },
-      { label: 'Drivers', path: '/masters/drivers', moduleKey: 'masters.drivers' },
-      { label: 'Users', path: '/masters/users', moduleKey: 'masters.users' },
-      { label: 'Pumps', path: '/masters/pumps', moduleKey: 'production.pumps' },
-    ],
-  },
-  { label: 'Fleet', icon: Car, path: '/fleet', moduleKey: 'fleet' },
-  { label: 'Alerts', icon: Bell, path: '/reports/alerts', moduleKey: 'reports.alerts' },
-  {
-    label: 'Reports', icon: TrendingUp,
-    children: [
-      { label: 'Profitability', path: '/reports/profitability', moduleKey: 'reports.profitability' },
-      { label: 'AR/AP Aging', path: '/reports/aging', moduleKey: 'reports.aging' },
-      { label: 'Credit Risk', path: '/reports/credit-risk', moduleKey: 'reports.creditRisk' },
-      { label: 'Sales Analysis', path: '/reports/sales-analysis', moduleKey: 'reports.salesAnalysis' },
-      { label: 'GSTR Export', path: '/reports/gstr-export', moduleKey: 'reports.gstrExport' },
-      { label: 'Multi-Branch Overview', path: '/reports/multi-branch', moduleKey: 'reports.multiBranch' },
-      { label: 'Driver Scorecard', path: '/reports/driver-scorecard', moduleKey: 'reports.driverScorecard' },
-      { label: 'Plant Capacity', path: '/reports/capacity', moduleKey: 'reports.capacity' },
-    ],
-  },
-  {
-    label: 'Admin', icon: ShieldCheck,
-    children: [
-      { label: 'Audit Log', path: '/admin/audit-log', moduleKey: 'admin.auditLog' },
-      { label: 'Scheduled Reports', path: '/admin/report-schedules', moduleKey: 'admin.reportSchedules' },
-      { label: 'Permissions', path: '/admin/permissions', moduleKey: 'admin.permissions' },
-    ],
-  },
-]
+import { NAV, findWorkspace, type NavItem } from '@/lib/nav'
+import { workspaceIcon } from '@/lib/workspaces'
+import BrandMark from '@/components/shared/BrandMark'
 
 interface SidebarProps {
   // Below the md breakpoint the sidebar is an off-canvas drawer owned by
@@ -130,12 +21,6 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
   const location = useLocation()
   const user = authStore.getUser()
   const [expanded, setExpanded] = useState<string[]>([])
-  // Falls back to the generic "C" mark until the logo loads (or forever, if
-  // this company never uploaded one / the request 404s) — see Platform
-  // Admin > Companies > Edit for the upload UI and components/shared/
-  // CompanyLogo.tsx for the same fallback pattern used on print pages.
-  const [logoFailed, setLogoFailed] = useState(false)
-  const companyId = user?.company?.id
 
   const toggle = (label: string) => {
     setExpanded(prev =>
@@ -161,6 +46,13 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
     })
     .filter((item): item is NavItem => item !== null)
 
+  // Inside a workspace (Sales, Production, ...) the sidebar shows only that
+  // workspace's screens — you pick a different one from the home launcher. A
+  // route that isn't under any workspace falls back to the full menu.
+  const workspace = findWorkspace(location.pathname)
+  const scoped = workspace ? visibleNav.find(i => i.label === workspace.label) : undefined
+  const WorkspaceIcon = workspace ? workspaceIcon(workspace.label) : undefined
+
   return (
     <>
       {/* Backdrop — mobile only, taps outside the drawer to dismiss it */}
@@ -183,21 +75,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       >
       {/* Logo */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          {companyId && !logoFailed ? (
-            <img
-              src={`/api/v1/public/companies/${companyId}/logo`}
-              alt={user?.company?.name ?? 'Company logo'}
-              className="h-7 w-7 rounded-lg object-contain bg-white/10"
-              onError={() => setLogoFailed(true)}
-            />
-          ) : (
-            <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">C</span>
-            </div>
-          )}
-          <span className="text-white font-bold text-base tracking-tight">CretOS</span>
-        </div>
+        <BrandMark tone="dark" onClick={onClose} />
         {/* Close button — mobile drawer only */}
         <button
           onClick={onClose}
@@ -219,7 +97,35 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2 scrollbar-none">
-        {visibleNav.map(item => (
+        {scoped ? (
+          <>
+            <Link
+              to="/home"
+              onClick={onClose}
+              className="mb-1 flex items-center gap-1.5 px-4 py-2 text-xs text-sidebar-text transition-colors hover:text-white"
+            >
+              <ArrowLeft size={13} /> All workspaces
+            </Link>
+            {scoped.path ? (
+              // A workspace that is a single screen (Dashboard, Fleet, Live Tracking, Alerts).
+              <NavLink to={scoped.path} onClick={onClose} className={({ isActive }) => cn('sidebar-item', isActive && 'active')}>
+                <scoped.icon size={15} />
+                <span>{scoped.label}</span>
+              </NavLink>
+            ) : (
+              <>
+                <p className="flex items-center gap-2 px-4 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                  {WorkspaceIcon && <WorkspaceIcon size={13} />} {scoped.label}
+                </p>
+                {scoped.children?.map(child => (
+                  <NavLink key={child.path} to={child.path} onClick={onClose} className={({ isActive }) => cn('sidebar-item', isActive && 'active')}>
+                    {child.label}
+                  </NavLink>
+                ))}
+              </>
+            )}
+          </>
+        ) : visibleNav.map(item => (
           <div key={item.label}>
             {item.path ? (
               <NavLink

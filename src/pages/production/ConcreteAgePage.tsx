@@ -48,7 +48,7 @@ export default function ConcreteAgePage() {
   })
 
   const saveThresholds = useMutation({
-    mutationFn: () => api.patch(`/masters/branches/${user?.branch?.id}`, {
+    mutationFn: () => api.put(`/masters/branches/${user?.branch?.id}`, {
       concrete_age_green_min: Number(greenDraft),
       concrete_age_yellow_min: Number(yellowDraft),
     }),
