@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Truck, Calendar, ClipboardList, FileText,
   CreditCard, Receipt, ShoppingCart, Package, Warehouse,
-  Users, Building2, Car, FlaskConical, TrendingUp, Bell, ShieldCheck, Factory, MapPinned
+  Users, Building2, Car, FlaskConical, TrendingUp, Bell, ShieldCheck, Factory, MapPinned, Blend
 } from 'lucide-react'
 
 export interface NavItem {
@@ -20,6 +20,9 @@ export const NAV: NavItem[] = [
   {
     label: 'Sales', icon: Truck,
     children: [
+      // Pipeline aggregates the other Sales/Marketing lists, so it rides on the
+      // challan module (the one every Sales user has) rather than a new key.
+      { label: 'Pipeline', path: '/sales/pipeline', moduleKey: 'sales.challans' },
       { label: 'Dispatch Challan', path: '/sales/challans', moduleKey: 'sales.challans' },
       { label: 'Daily Schedule', path: '/sales/schedules', moduleKey: 'sales.schedules' },
       { label: 'Work Orders', path: '/sales/orders', moduleKey: 'sales.orders' },
@@ -54,6 +57,7 @@ export const NAV: NavItem[] = [
   {
     label: 'Concrete Lab', icon: FlaskConical,
     children: [
+      { label: 'Lab Overview', path: '/quality/overview', moduleKey: 'lab.tests' },
       { label: 'Grade Master', path: '/masters/grades', moduleKey: 'lab.grades' },
       { label: 'Cube Test Results', path: '/quality/tests', moduleKey: 'lab.tests' },
       { label: 'NCR / CAPA', path: '/quality/ncr', moduleKey: 'lab.ncr' },
@@ -62,6 +66,7 @@ export const NAV: NavItem[] = [
   {
     label: 'Production', icon: Factory,
     children: [
+      { label: 'Batching Overview', path: '/production/overview', moduleKey: 'production.batching' },
       { label: 'Weighbridge', path: '/production/weighbridge', moduleKey: 'production.weighbridge' },
       { label: 'Batching / MES', path: '/production/batches', moduleKey: 'production.batching' },
       { label: 'Plant Connectivity', path: '/production/connectivity', moduleKey: 'production.batching' },
@@ -71,6 +76,16 @@ export const NAV: NavItem[] = [
       { label: 'OEE / Downtime', path: '/production/oee', moduleKey: 'production.oee' },
       { label: 'Energy Management', path: '/production/energy', moduleKey: 'production.energy' },
       { label: 'Carbon / Sustainability', path: '/production/carbon', moduleKey: 'production.carbon' },
+    ],
+  },
+  {
+    // New module from the product design. There is no recipe backend yet, so
+    // it borrows the Grade Master permission (same audience: lab / QC) and
+    // runs on sample data — see lib/recipes.ts.
+    label: 'Recipe Store', icon: Blend,
+    children: [
+      { label: 'Recipe Library', path: '/recipes', moduleKey: 'lab.grades' },
+      { label: 'Trial Mixes', path: '/recipes/trial', moduleKey: 'lab.grades' },
     ],
   },
   {

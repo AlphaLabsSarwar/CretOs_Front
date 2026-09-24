@@ -24,6 +24,11 @@ export function formatQty(qty: number): string {
   return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(qty)
 }
 
+// Headline volume ("642" / "7.2") for KPI tiles, where 3-decimal precision is noise.
+export function formatQtyShort(qty: number): string {
+  return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(qty)
+}
+
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date))
 }

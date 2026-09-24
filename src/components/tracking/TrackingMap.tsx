@@ -1,7 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { formatAgo, isStale, type Trip } from '@/lib/tracking'
+import { MAPPLS_KEY } from '@/lib/loadMappls'
+
+// Mappls (MapmyIndia) is the primary map when VITE_MAPPLS_KEY is set; its
+// component (and SDK) is only downloaded in that case.
+const MapplsTrackingMap = lazy(() => import('./MapplsTrackingMap'))
 
 export interface Plant { name: string; lat: number; lng: number }
 
@@ -67,7 +72,7 @@ function glide(entry: MarkerEntry, to: L.LatLngTuple) {
   entry.raf = requestAnimationFrame(step)
 }
 
-interface TrackingMapProps {
+export interface TrackingMapProps {
   trips: Trip[]
   plant: Plant | null
   selectedId: string | null
@@ -82,7 +87,18 @@ interface TrackingMapProps {
 // then updated in place on every poll (a marker just slides to its new
 // position) instead of being torn down and rebuilt — otherwise the view would
 // flicker and reset every 10 seconds.
-export default function TrackingMap({ trips, plant, selectedId, onSelect, now, fitSignal, className }: TrackingMapProps) {
+/** Mappls when a key is configured and its SDK loads; otherwise the OpenStreetMap (Leaflet) map below. */
+export default function TrackingMap(props: TrackingMapProps) {
+  const [mapplsFailed, setMapplsFailed] = useState(false)
+  if (!MAPPLS_KEY || mapplsFailed) return <LeafletTrackingMap {...props} />
+  return (
+    <Suspense fallback={<div className={props.className} />}>
+      <MapplsTrackingMap {...props} onUnavailable={() => setMapplsFailed(true)} />
+    </Suspense>
+  )
+}
+
+function LeafletTrackingMap({ trips, plant, selectedId, onSelect, now, fitSignal, className }: TrackingMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markersRef = useRef(new Map<string, MarkerEntry>())

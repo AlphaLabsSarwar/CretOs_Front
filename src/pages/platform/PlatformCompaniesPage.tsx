@@ -436,7 +436,7 @@ export default function PlatformCompaniesPage() {
             <p className="text-xs text-gray-400">Create your first client above.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="reveal overflow-hidden rounded-xl border border-gray-200 bg-white">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">

@@ -4,3 +4,5 @@
 // search button already uses to open CommandPalette. Lives in its own module
 // so the two layout components don't need to import from each other.
 export const SHOW_TOUR_EVENT = 'cretos:show-tour'
+// Same pattern: the home launcher's "CretOS Assistant" tile opens ChatWidget.
+export const OPEN_CHAT_EVENT = 'cretos:open-chat'

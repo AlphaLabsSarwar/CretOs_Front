@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { OPEN_CHAT_EVENT } from '@/lib/tourEvent'
 
 interface ChatMessage {
   id: string
@@ -41,6 +42,13 @@ export default function ChatWidget() {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 10)
   }, [open])
+
+  // The home launcher's "CretOS Assistant" tile opens this panel.
+  useEffect(() => {
+    const show = () => setOpen(true)
+    window.addEventListener(OPEN_CHAT_EVENT, show)
+    return () => window.removeEventListener(OPEN_CHAT_EVENT, show)
+  }, [])
 
   async function send(text: string) {
     const trimmed = text.trim()

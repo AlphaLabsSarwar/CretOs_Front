@@ -6,7 +6,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        accent: { DEFAULT: '#E8630A', hover: '#CF560A', light: '#FDF0E8' },
+        accent: { DEFAULT: '#E8630A', hover: '#CF560A', light: '#FDF0E8', soft: '#FDBA74' },
+        page: '#F7F8FA',
+        // Live Tracking "command center" surfaces (the one dark screen).
+        command: { bg: '#0B0D11', panel: '#101216', map: '#0D1016' },
         sidebar: { bg: '#111318', text: '#A1A8B4', active: '#FFFFFF', item: '#1E2028' },
         status: { active: '#16A34A', pending: '#D97706', closed: '#6B7280', error: '#DC2626' },
       },
@@ -69,6 +72,24 @@ const config: Config = {
           '0%, 80%, 100%': { transform: 'translateY(0)', opacity: '0.35' },
           '40%': { transform: 'translateY(-3px)', opacity: '1' },
         },
+        // Sign-in hero: the batching-yard scene (see pages/auth/LoginPage.tsx).
+        'bar-rise': { '0%, 100%': { transform: 'scaleY(.35)' }, '50%': { transform: 'scaleY(1)' } },
+        'dust-drift': {
+          '0%': { opacity: '0', transform: 'translate(0,0) scale(.6)' },
+          '30%': { opacity: '.55' },
+          '100%': { opacity: '0', transform: 'translate(-22px,-30px) scale(1.3)' },
+        },
+        'drive-path': { to: { offsetDistance: '100%' } },
+        'tip-bed': { '0%, 35%, 100%': { transform: 'rotate(0deg)' }, '55%, 80%': { transform: 'rotate(-22deg)' } },
+        'fall-bit': {
+          '0%': { opacity: '0', transform: 'translate(0,0)' },
+          '10%': { opacity: '1' },
+          '100%': { opacity: '0', transform: 'translate(-6px,26px)' },
+        },
+        'scoop-arm': { '0%, 100%': { transform: 'rotate(0deg)' }, '50%': { transform: 'rotate(9deg)' } },
+        'bucket-tilt': { '0%, 100%': { transform: 'rotate(0deg)' }, '50%': { transform: 'rotate(-14deg)' } },
+        'fill-pulse': { '0%, 100%': { opacity: '.35' }, '50%': { opacity: '1' } },
+        'soft-pulse': { '0%, 100%': { opacity: '1' }, '50%': { opacity: '.35' } },
       },
       animation: {
         spin: 'wheel-spin 0.8s cubic-bezier(0.45, 0, 0.55, 1) infinite',
@@ -86,6 +107,16 @@ const config: Config = {
         'glow-pulse': 'glow-pulse 2.2s ease-in-out infinite',
         'speed-line': 'speed-line 0.7s ease-out infinite',
         'dot-bounce': 'dot-bounce 1.2s ease-in-out infinite',
+        'drum-slow': 'drum-spin 5s linear infinite',
+        'bar-rise': 'bar-rise 2.6s ease-in-out infinite',
+        'dust-drift': 'dust-drift 3.2s ease-out infinite',
+        'drive-path': 'drive-path 9s linear infinite',
+        'tip-bed': 'tip-bed 4.5s ease-in-out infinite',
+        'fall-bit': 'fall-bit 4.5s ease-in-out infinite',
+        'scoop-arm': 'scoop-arm 3.4s ease-in-out infinite',
+        'bucket-tilt': 'bucket-tilt 3.4s ease-in-out infinite',
+        'fill-pulse': 'fill-pulse 2.2s ease-in-out infinite',
+        'soft-pulse': 'soft-pulse 1.6s ease-in-out infinite',
       },
     },
   },

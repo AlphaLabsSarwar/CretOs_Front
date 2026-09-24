@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { ArrowLeft, ChevronDown, ChevronRight, LogOut, HelpCircle, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, LogOut, HelpCircle, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authStore } from '@/store/auth'
 import { permissionsStore } from '@/store/permissions'
@@ -15,6 +15,11 @@ interface SidebarProps {
   // md it's always visible and these props are simply unused.
   open?: boolean
   onClose?: () => void
+}
+
+/** ADMIN -> Admin, PLANT_MANAGER -> Plant Manager. */
+function roleLabel(role?: string) {
+  return (role ?? '').toLowerCase().split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
 export default function Sidebar({ open = false, onClose }: SidebarProps) {
@@ -65,7 +70,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       )}
       <aside
         className={cn(
-          'w-60 flex-shrink-0 bg-sidebar-bg flex flex-col h-screen',
+          'w-60 flex-shrink-0 bg-sidebar-bg flex flex-col h-screen md:shell-enter',
           // Desktop: static column, always visible. Mobile: fixed off-canvas
           // drawer that slides in from the left over the content.
           'fixed inset-y-0 left-0 z-40 transition-transform duration-200 ease-out',
@@ -74,7 +79,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         )}
       >
       {/* Logo */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-white/10">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.08] px-[18px]">
         <BrandMark tone="dark" onClick={onClose} />
         {/* Close button — mobile drawer only */}
         <button
@@ -86,23 +91,15 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         </button>
       </div>
 
-      {/* Company + branch indicator */}
-      <div className="px-4 py-2.5 border-b border-white/10">
-        {user?.company?.name && (
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-accent">{user.company.name}</p>
-        )}
-        <p className="text-xs text-sidebar-text">{user?.branch?.name ?? 'Branch'}</p>
-        <p className="text-white text-xs font-medium">{user?.name ?? 'User'}</p>
-      </div>
-
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-2 scrollbar-none">
+      {/* Keyed by workspace so its screen list re-enters when you switch workspace. */}
+      <nav key={workspace?.label ?? 'all'} className="nav-enter flex-1 overflow-y-auto py-2.5 scrollbar-none">
         {scoped ? (
           <>
             <Link
               to="/home"
               onClick={onClose}
-              className="mb-1 flex items-center gap-1.5 px-4 py-2 text-xs text-sidebar-text transition-colors hover:text-white"
+              className="mb-1.5 flex items-center gap-1.5 px-[18px] py-2 text-xs text-sidebar-text transition-colors hover:bg-sidebar-item hover:text-white"
             >
               <ArrowLeft size={13} /> All workspaces
             </Link>
@@ -114,11 +111,20 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               </NavLink>
             ) : (
               <>
-                <p className="flex items-center gap-2 px-4 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                  {WorkspaceIcon && <WorkspaceIcon size={13} />} {scoped.label}
+                <p className="flex items-center gap-2 px-[18px] pb-2 pt-0.5 text-[10.5px] font-bold uppercase tracking-[0.05em] text-white/50">
+                  {WorkspaceIcon && <WorkspaceIcon size={13} className="text-accent" />} {scoped.label}
                 </p>
                 {scoped.children?.map(child => (
-                  <NavLink key={child.path} to={child.path} onClick={onClose} className={({ isActive }) => cn('sidebar-item', isActive && 'active')}>
+                  // A parent path (/recipes) stays lit on its own sub-pages
+                  // (/recipes/:id) but not on a sibling screen's (/recipes/trial).
+                  <NavLink
+                    key={child.path}
+                    to={child.path}
+                    onClick={onClose}
+                    className={({ isActive }) => cn('sidebar-subitem', isActive
+                      && !scoped.children!.some(c => c !== child && c.path.length > child.path.length && location.pathname.startsWith(c.path))
+                      && 'active')}
+                  >
                     {child.label}
                   </NavLink>
                 ))}
@@ -174,26 +180,35 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         ))}
       </nav>
 
+      {/* Search — opens the ⌘K command palette (the desktop layout has no top bar). */}
+      <button
+        onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+        className="hidden items-center gap-2 border-t border-white/[0.08] px-4 py-2.5 text-xs text-sidebar-text transition-colors hover:text-white md:flex"
+      >
+        <Search size={14} /> Search or jump to…
+        <kbd className="ml-auto rounded border border-white/15 px-1 text-[10px]">⌘K</kbd>
+      </button>
+
       {/* Take a tour — replays ProductTour (see components/layout/AppLayout.tsx),
           which otherwise only shows itself automatically once, on a user's
           very first login on this browser. */}
       <button
         onClick={() => window.dispatchEvent(new Event(SHOW_TOUR_EVENT))}
-        className="flex items-center gap-2 border-t border-white/10 px-4 py-2.5 text-xs text-sidebar-text hover:text-white transition-colors"
+        className="flex items-center gap-2 border-t border-white/[0.08] px-4 py-2.5 text-xs text-sidebar-text hover:text-white transition-colors"
       >
         <HelpCircle size={14} /> Take a tour
       </button>
 
       {/* Footer */}
-      <div className="border-t border-white/10 p-3 flex items-center gap-2">
+      <div className="border-t border-white/[0.08] px-4 py-3 flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center">
-          <span className="text-accent text-xs font-semibold">
+          <span className="text-accent text-xs font-bold">
             {user?.name?.[0]?.toUpperCase() ?? 'U'}
           </span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white text-xs font-medium truncate">{user?.name}</p>
-          <p className="text-sidebar-text text-xs truncate">{user?.role}</p>
+          <p className="text-sidebar-text text-[11px] truncate">{roleLabel(user?.role)}</p>
         </div>
         <button
           onClick={() => { authStore.clear(); permissionsStore.clear(); window.location.href = '/login' }}

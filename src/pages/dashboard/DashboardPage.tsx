@@ -1,27 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import {
-  Area, AreaChart, Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from 'recharts'
-import {
-  AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Clock, FileText,
-  FlaskConical, Gauge, IndianRupee, MapPin, Package, Scale, Truck,
-} from 'lucide-react'
+import { AlertTriangle, ArrowRight, Clock, MapPin, Truck } from 'lucide-react'
 import { api } from '@/lib/api'
-import { formatQty, formatINR, formatINRCompact, formatTime, formatMinutes } from '@/lib/utils'
+import { cn, formatQty, formatQtyShort, formatINR, formatINRCompact, formatTime, formatMinutes } from '@/lib/utils'
 import { authStore } from '@/store/auth'
 import AnimatedNumber from '@/components/shared/AnimatedNumber'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 
 // ─── Owner/manager dashboard ─────────────────────────────────────────────
 // Reading order is deliberate and answers three questions in sequence:
-//   1. "How did we do today?"      -> hero row: revenue, volume, utilization
+//   1. "How did we do today?"      -> the six-tile KPI row
 //   2. "Is anything wrong?"        -> Needs Attention strip (only when it is)
-//   3. "Where is it heading?"      -> 14-day trend, then live ops + breakdowns
-// Everything above the fold is a number an owner can act on. Detail tables
-// (top customers, vehicle utilization) sit below, since they're reference,
-// not decisions.
+//   3. "Where is it heading?"      -> weekly volume, customers, quality, money
+// Live ops (trucks in transit, today's challans) sit below as reference.
 
 interface TrendPoint { date: string; qty: number; revenue: number }
 interface DashboardSummary {
@@ -43,106 +33,57 @@ interface DashboardSummary {
 interface AgingBuckets { '0-30': number; '31-60': number; '60+': number }
 interface AgingSummary { ar: { buckets: AgingBuckets; total: number }; ap: { buckets: AgingBuckets; total: number } }
 
-const CHART_TOOLTIP = {
-  contentStyle: { fontSize: 12, border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 10px' },
-  labelStyle: { color: '#6B7280', fontSize: 11, marginBottom: 2 },
-}
-
-/** Coloured up/down arrow + percentage, or a neutral dash when there's no
- *  comparable baseline (yesterday was zero). Direction is not always good
- *  news — `invert` flags metrics where down is better. */
-function Delta({ pct, invert = false }: { pct: number | null; invert?: boolean }) {
-  if (pct === null) return <span className="text-[11px] text-gray-300">no data yesterday</span>
-  if (pct === 0) return <span className="text-[11px] text-gray-400">same as yesterday</span>
-  const up = pct > 0
-  const good = invert ? !up : up
-  const Icon = up ? ArrowUpRight : ArrowDownRight
+/** "▲ 12% vs yesterday", or a neutral line when there's no comparable baseline. */
+function Delta({ pct }: { pct: number | null | undefined }) {
+  if (pct == null) return <span className="text-slate-400">no data yesterday</span>
+  if (pct === 0) return <span className="text-slate-400">same as yesterday</span>
   return (
-    <span className={`flex items-center gap-0.5 text-[11px] font-medium ${good ? 'text-green-600' : 'text-red-600'}`}>
-      <Icon size={11} strokeWidth={2.5} />
-      {Math.abs(pct)}% <span className="font-normal text-gray-400">vs yesterday</span>
+    <span className={pct > 0 ? 'text-green-600' : 'text-red-600'}>
+      {pct > 0 ? '▲' : '▼'} {Math.abs(pct)}% vs yesterday
     </span>
   )
 }
 
-function HeroCard({
-  label, value, prefix, suffix, delta, icon: Icon, tone = 'default', footer, onClick,
-}: {
-  label: string
-  value: number | null | undefined
-  prefix?: string
-  suffix?: string
-  delta?: React.ReactNode
-  icon: React.ElementType
-  tone?: 'default' | 'accent'
-  footer?: React.ReactNode
-  onClick?: () => void
-}) {
-  const accent = tone === 'accent'
+function Kpi({ label, children, sub, onClick }: { label: string; children: React.ReactNode; sub: React.ReactNode; onClick?: () => void }) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <Card
-      padding="sm"
-      onClick={onClick}
-      className={`transition-shadow ${accent ? 'border-accent/30' : ''} ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <p className="section-label">{label}</p>
-        <div className={`rounded-lg p-1.5 ${accent ? 'bg-accent/10 text-accent' : 'bg-gray-100 text-gray-400'}`}>
-          <Icon size={14} />
-        </div>
-      </div>
-      <div className="flex items-baseline gap-1">
-        {prefix && <span className="text-lg font-semibold text-gray-400">{prefix}</span>}
-        <AnimatedNumber
-          value={value ?? 0}
-          format={n => (label === "Today's Revenue" ? formatINRCompact(n) : formatQty(n))}
-          className="font-mono text-[26px] font-bold leading-none tracking-tight text-gray-900"
-        />
-        {suffix && <span className="text-sm font-medium text-gray-400">{suffix}</span>}
-      </div>
-      <div className="mt-2">{delta}</div>
-      {footer}
-    </Card>
+    <Tag onClick={onClick} className={cn('kpi-tile text-left', onClick && 'cursor-pointer')}>
+      <p className="kpi-label">{label}</p>
+      <div className="kpi-value">{children}</div>
+      <p className="mt-0.5 text-[10.5px]">{sub}</p>
+    </Tag>
   )
 }
 
-/** Horizontal capacity meter. Amber under 50% (plant is idling), red over
- *  100% (running past rated capacity — worth knowing, not celebrating). */
-function UtilizationCard({ pct, capacity, actual }: { pct: number | null; capacity: number | null; actual: number }) {
-  const navigate = useNavigate()
-  const bar = pct == null ? 0 : Math.min(pct, 100)
-  const tone = pct == null ? 'bg-gray-200'
-    : pct > 100 ? 'bg-red-500' : pct < 50 ? 'bg-amber-400' : 'bg-green-500'
+function Panel({ title, action, className, children }: { title: string; action?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
-    <Card
-      padding="sm"
-      onClick={() => navigate('/reports/capacity')}
-      className="cursor-pointer transition-shadow hover:shadow-md"
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <p className="section-label">Plant Utilization</p>
-        <div className="rounded-lg bg-gray-100 p-1.5 text-gray-400"><Gauge size={14} /></div>
+    <section className={cn('panel p-[18px]', className)}>
+      <div className="mb-3.5 flex items-center justify-between gap-2">
+        <h2 className="panel-title">{title}</h2>
+        {action}
       </div>
-      {pct == null ? (
-        <>
-          <p className="font-mono text-[26px] font-bold leading-none text-gray-300">—</p>
-          <p className="mt-2 text-[11px] text-accent hover:underline">Set plant capacity to track this →</p>
-        </>
-      ) : (
-        <>
-          <div className="flex items-baseline gap-1">
-            <AnimatedNumber value={pct} format={n => `${n}`} className="font-mono text-[26px] font-bold leading-none tracking-tight text-gray-900" />
-            <span className="text-sm font-medium text-gray-400">%</span>
-          </div>
-          <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-            <div className={`h-full rounded-full transition-all duration-500 ${tone}`} style={{ width: `${bar}%` }} />
-          </div>
-          <p className="mt-1.5 text-[11px] text-gray-400">
-            {formatQty(actual)} of {capacity != null ? formatQty(capacity) : '—'} cum capacity
-          </p>
-        </>
-      )}
-    </Card>
+      {children}
+    </section>
+  )
+}
+
+const Empty = ({ children }: { children: React.ReactNode }) => (
+  <p className="reveal flex h-[120px] items-center justify-center text-xs text-slate-400">{children}</p>
+)
+
+/** Panel placeholder while the summary loads: the table skeleton's shimmer,
+ *  easing in after the same grace delay as the loaders. */
+function PanelLoading() {
+  return (
+    <div role="status" aria-label="Loading" className="loader-enter flex h-[120px] flex-col justify-center gap-3">
+      {[92, 74, 84, 58].map(w => (
+        <div
+          key={w}
+          className="h-3 animate-pour-sweep rounded"
+          style={{ width: `${w}%`, backgroundImage: 'linear-gradient(90deg, #E5E7EB 25%, #FDF0E8 50%, #E5E7EB 75%)', backgroundSize: '200% 100%' }}
+        />
+      ))}
+    </div>
   )
 }
 
@@ -192,10 +133,10 @@ function NeedsAttention({ summary }: { summary: DashboardSummary }) {
   if (items.length === 0) return null
 
   return (
-    <Card padding="sm" className="border-amber-200 bg-amber-50/60">
-      <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-amber-900">
-        <AlertTriangle size={14} /> Needs Attention
-      </h3>
+    <section className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+      <h2 className="mb-3 flex items-center gap-1.5 text-[13px] font-bold text-amber-900">
+        <AlertTriangle size={14} /> Needs attention
+      </h2>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
         {items.map(item => (
           <button
@@ -204,41 +145,90 @@ function NeedsAttention({ summary }: { summary: DashboardSummary }) {
             className="group flex items-start justify-between gap-2 rounded-lg border border-amber-200/70 bg-white px-3 py-2 text-left transition-colors hover:border-amber-300 hover:bg-amber-50"
           >
             <span className="min-w-0">
-              <span className={`block text-xs font-medium ${item.severity === 'high' ? 'text-red-700' : 'text-gray-800'}`}>
-                {item.label}
-              </span>
-              <span className="mt-0.5 block truncate text-[11px] text-gray-500">{item.detail}</span>
+              <span className={cn('block text-xs font-medium', item.severity === 'high' ? 'text-red-700' : 'text-slate-800')}>{item.label}</span>
+              <span className="mt-0.5 block truncate text-[11px] text-slate-500">{item.detail}</span>
             </span>
-            <ArrowRight size={13} className="mt-0.5 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+            <ArrowRight size={13} className="mt-0.5 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
           </button>
         ))}
       </div>
-    </Card>
+    </section>
   )
 }
 
-function AgingBar({ label, buckets, total, tint }: { label: string; buckets: AgingBuckets; total: number; tint: string }) {
-  const b30 = buckets['0-30'], b60 = buckets['31-60'], b60p = buckets['60+']
-  const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0)
+/** Last seven days of dispatched volume as columns; today in solid accent. */
+function WeeklyVolume({ trend }: { trend: TrendPoint[] }) {
+  const week = trend.slice(-7)
+  if (!week.length) return <Empty>No dispatch history yet</Empty>
+  const max = Math.max(...week.map(d => d.qty), 1)
+  const todayKey = new Date().toDateString()
   return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-medium text-gray-700">{label}</span>
-        <span className="font-mono text-gray-500">₹{formatINR(total)}</span>
+    <div className="reveal flex h-[140px] items-end gap-3">
+      {week.map(d => {
+        const date = new Date(d.date)
+        const isToday = date.toDateString() === todayKey
+        return (
+          <div key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5" title={`${formatQty(d.qty)} cum · ₹${formatINR(d.revenue)}`}>
+            <span className="font-mono text-[9.5px] text-slate-400">{formatQtyShort(d.qty)}</span>
+            <span
+              className={cn('w-full rounded-t-[5px] transition-[height] duration-500', isToday ? 'bg-accent' : 'bg-accent-light')}
+              style={{ height: `${Math.max((d.qty / max) * 100, 3)}px` }}
+            />
+            <span className={cn('text-[10px]', isToday ? 'font-semibold text-slate-900' : 'text-slate-400')}>
+              {date.toLocaleDateString('en-IN', { weekday: 'short' })}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+const BAR_TINTS = [
+  ['bg-blue-50', 'bg-blue-200'], ['bg-blue-50', 'bg-blue-300'], ['bg-accent-light', 'bg-[#F3AA79]'],
+  ['bg-accent-light', 'bg-accent'], ['bg-green-50', 'bg-green-600'],
+] as const
+
+/** Top customers as the design's horizontal "pipeline" bars. */
+function TopCustomers({ rows }: { rows: DashboardSummary['topCustomers'] }) {
+  if (!rows.length) return <Empty>No dispatches in the last 30 days</Empty>
+  const max = Math.max(...rows.map(r => r.totalQty), 1)
+  return (
+    <div className="reveal flex flex-col gap-[9px]">
+      {rows.slice(0, 5).map((r, i) => {
+        const [track, fill] = BAR_TINTS[i % BAR_TINTS.length]
+        return (
+          <div key={r.customerId ?? r.name ?? i} className="flex items-center gap-2.5" title={`₹${formatINR(r.totalRevenue)}`}>
+            <span className="w-28 shrink-0 truncate text-[11px] text-slate-500">{r.name ?? 'Unknown'}</span>
+            <span className={cn('h-4 flex-1 rounded', track)}>
+              <span className={cn('block h-full rounded transition-[width] duration-500', fill)} style={{ width: `${(r.totalQty / max) * 100}%` }} />
+            </span>
+            <span className="w-12 shrink-0 text-right font-mono text-[11px]">{formatQtyShort(r.totalQty)}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function QualityDonut({ quality }: { quality: DashboardSummary['quality'] }) {
+  if (quality.passRate == null) return <Empty>No cube tests recorded</Empty>
+  const total = quality.passed + quality.failed
+  return (
+    <div className="reveal flex items-center gap-[22px]">
+      <div
+        className="relative h-[120px] w-[120px] shrink-0 rounded-full"
+        style={{ background: `conic-gradient(#16A34A 0% ${quality.passRate}%, #DC2626 ${quality.passRate}% 100%)` }}
+      >
+        <div className="absolute inset-[18px] flex flex-col items-center justify-center rounded-full bg-white">
+          <span className="font-mono text-[15px] font-bold">{quality.passRate}%</span>
+          <span className="text-[9px] text-slate-400">pass rate</span>
+        </div>
       </div>
-      <div className="flex h-2 overflow-hidden rounded-full bg-gray-100">
-        {total > 0 && (
-          <>
-            <div className={`${tint} opacity-40`} style={{ width: `${pct(b30)}%` }} />
-            <div className={`${tint} opacity-70`} style={{ width: `${pct(b60)}%` }} />
-            <div className={tint} style={{ width: `${pct(b60p)}%` }} />
-          </>
-        )}
-      </div>
-      <div className="mt-1 flex items-center gap-3 text-[10px] text-gray-400">
-        <span>0-30d ₹{formatINR(b30)}</span>
-        <span>31-60d ₹{formatINR(b60)}</span>
-        <span className={b60p > 0 ? 'font-medium text-red-600' : ''}>60d+ ₹{formatINR(b60p)}</span>
+      <div className="flex flex-col gap-1.5 text-[11px]">
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-green-600" />Passed · <span className="font-mono text-slate-400">{quality.passed}</span></span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-red-600" />Failed · <span className="font-mono text-slate-400">{quality.failed}</span></span>
+        <span className="mt-1 text-slate-400">{total} cube test{total === 1 ? '' : 's'} in the last 30 days</span>
       </div>
     </div>
   )
@@ -250,14 +240,14 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const isAdmin = user?.role === 'ADMIN'
 
-  const { data: dashData } = useQuery({
+  const { data: dashData, dataUpdatedAt } = useQuery({
     queryKey: ['dashboard-challans', branchId],
     queryFn: () => api.get('/sales/challans/dashboard', { params: { branch_id: branchId } }).then(r => r.data.data),
     enabled: !!branchId,
     refetchInterval: 30_000,
   })
 
-  const { data: summary } = useQuery({
+  const { data: summary, isError: summaryFailed } = useQuery({
     queryKey: ['dashboard-summary', branchId],
     queryFn: () => api.get('/dashboard/summary', { params: { branch_id: branchId } }).then(r => r.data.data as DashboardSummary),
     enabled: !!branchId,
@@ -271,143 +261,132 @@ export default function DashboardPage() {
     refetchInterval: 60_000,
   })
 
-  const trendChart = (summary?.trend ?? []).map(t => ({
-    label: new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-    qty: Number(t.qty.toFixed(1)),
-    revenue: Math.round(t.revenue),
-  }))
-  const topCustomersChart = (summary?.topCustomers ?? []).map(c => ({
-    name: c.name ?? 'Unknown', qty: Number(c.totalQty.toFixed(1)),
-  }))
-  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'
+  const inTransit: any[] = dashData?.inTransit ?? []
+  const util = summary?.today.utilizationPct ?? null
+  const updated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : null
 
   return (
-    <div className="space-y-5">
-      {/* Greeting anchors the numbers to a person and a date — this screen is
-          checked daily, so "which day am I looking at" should never be a
-          question. */}
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">
-            {greeting}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
-          </h1>
-          <p className="text-xs text-gray-400">
-            {user?.branch?.name ?? 'Branch'} · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <h1 className="text-[21px] font-bold text-slate-900">Dashboard</h1>
+          <p className="mt-1 text-xs text-slate-400">
+            Business overview · {user?.branch?.name ?? 'Branch'}{updated && ` · updated ${updated}`}
           </p>
         </div>
-        <Button onClick={() => navigate('/quick-dispatch')} size="md">
+        <button
+          onClick={() => navigate('/quick-dispatch')}
+          className="flex h-[34px] items-center gap-1.5 rounded-lg bg-accent px-3.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
+        >
           <Truck size={14} /> Quick Dispatch
-        </Button>
+        </button>
       </div>
 
       {/* 1 — How did we do today? */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <HeroCard
-          label="Today's Revenue"
-          value={summary?.today.totalRevenue}
-          prefix="₹"
-          icon={IndianRupee}
-          tone="accent"
-          delta={<Delta pct={summary?.change.revenuePct ?? null} />}
-        />
-        <HeroCard
-          label="Concrete Dispatched"
-          value={summary?.today.totalQty}
-          suffix="cum"
-          icon={Truck}
-          delta={<Delta pct={summary?.change.qtyPct ?? null} />}
-          footer={
-            <p className="mt-1 text-[11px] text-gray-400">
-              {summary?.today.totalTrips ?? 0} trip{(summary?.today.totalTrips ?? 0) === 1 ? '' : 's'}
-              {summary?.today.wastagePct != null && ` · ${summary.today.wastagePct}% wastage`}
-            </p>
-          }
-        />
-        <UtilizationCard
-          pct={summary?.today.utilizationPct ?? null}
-          capacity={summary?.today.capacityCum ?? null}
-          actual={summary?.today.totalQty ?? 0}
-        />
-        <HeroCard
-          label="Outstanding"
-          value={summary?.finance.outstanding}
-          prefix="₹"
-          icon={Scale}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <Kpi label="Revenue today" sub={<Delta pct={summary?.change.revenuePct} />}>
+          ₹<AnimatedNumber value={summary?.today.totalRevenue ?? 0} format={formatINRCompact} />
+        </Kpi>
+        <Kpi label="Production volume" sub={<span className="text-slate-400">{summary?.today.totalTrips ?? 0} trips today{summary?.today.wastagePct != null && ` · ${summary.today.wastagePct}% wastage`}</span>}>
+          <AnimatedNumber value={summary?.today.totalQty ?? 0} format={formatQtyShort} /> m³
+        </Kpi>
+        <Kpi
+          label="Plant utilisation"
+          onClick={() => navigate('/reports/capacity')}
+          sub={<span className="text-slate-400">{util == null ? 'Set capacity to track' : `of ${summary?.today.capacityCum != null ? formatQtyShort(summary.today.capacityCum) : '—'} m³ capacity`}</span>}
+        >
+          <span className={cn(util == null ? 'text-slate-300' : util > 100 ? 'text-red-600' : util < 50 ? 'text-amber-600' : 'text-green-600')}>
+            {util == null ? '—' : `${util}%`}
+          </span>
+        </Kpi>
+        <Kpi
+          label="Quality pass rate"
+          onClick={() => navigate('/quality/tests')}
+          sub={<span className="text-slate-400">{summary ? `${summary.quality.passed + summary.quality.failed} tests · 30 days` : '—'}</span>}
+        >
+          <span className={cn(summary?.quality.passRate == null ? 'text-slate-300' : summary.quality.passRate >= 95 ? 'text-green-600' : summary.quality.passRate >= 85 ? 'text-amber-600' : 'text-red-600')}>
+            {summary?.quality.passRate == null ? '—' : `${summary.quality.passRate}%`}
+          </span>
+        </Kpi>
+        <Kpi
+          label="Outstanding receivables"
           onClick={() => navigate('/reports/aging')}
-          delta={
-            summary && summary.finance.overdueCount > 0 ? (
-              <span className="text-[11px] font-medium text-red-600">
-                ₹{formatINR(summary.finance.overdueAmount)} overdue
-              </span>
-            ) : <span className="text-[11px] text-green-600">Nothing overdue</span>
-          }
-        />
+          sub={summary && summary.finance.overdueCount > 0
+            ? <span className="text-red-600">₹{formatINRCompact(summary.finance.overdueAmount)} overdue</span>
+            : <span className="text-green-600">Nothing overdue</span>}
+        >
+          <span className="text-amber-700">₹<AnimatedNumber value={summary?.finance.outstanding ?? 0} format={formatINRCompact} /></span>
+        </Kpi>
+        <Kpi label="Fleet status" onClick={() => navigate('/tracking')} sub={<span className="text-slate-400">{summary?.vehicleUtilization.length ?? 0} trucks used today</span>}>
+          {inTransit.length}<span className="text-[13px] text-slate-400"> on road</span>
+        </Kpi>
       </div>
 
       {/* 2 — Is anything wrong? */}
       {summary && <NeedsAttention summary={summary} />}
 
       {/* 3 — Where is it heading? */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card padding="sm" className="xl:col-span-2">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">Last 14 Days</h3>
-            <span className="flex items-center gap-3 text-[11px] text-gray-400">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" /> Revenue</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300" /> Volume</span>
-            </span>
-          </div>
-          {trendChart.length === 0 ? (
-            <p className="flex h-[220px] items-center justify-center text-xs text-gray-400">No dispatch history yet</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={trendChart} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#E8630A" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#E8630A" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                <YAxis yAxisId="rev" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={v => formatINRCompact(v)} />
-                <YAxis yAxisId="qty" orientation="right" hide />
-                <Tooltip
-                  {...CHART_TOOLTIP}
-                  formatter={(v: number, name: string) =>
-                    name === 'Revenue' ? [`₹${formatINR(v)}`, 'Revenue'] : [`${formatQty(v)} cum`, 'Volume']
-                  }
-                />
-                <Area yAxisId="qty" type="monotone" dataKey="qty" name="Volume" stroke="#D1D5DB" strokeWidth={1.5} fill="none" dot={false} />
-                <Area yAxisId="rev" type="monotone" dataKey="revenue" name="Revenue" stroke="#E8630A" strokeWidth={2} fill="url(#revFill)" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+        <Panel title="Weekly dispatch volume (m³)">
+          {summary ? <WeeklyVolume trend={summary.trend} /> : summaryFailed ? <Empty>Couldn’t load this — retrying</Empty> : <PanelLoading />}
+        </Panel>
 
-        {/* Live ops — the one genuinely time-sensitive block on an owner's
-            screen, so it stays above the reference tables. */}
-        <Card padding="sm">
-          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-            <Truck size={14} className="text-gray-400" />
-            Trucks in Transit
-            {dashData?.inTransit?.length > 0 && (
-              <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-                {dashData.inTransit.length}
-              </span>
+        <Panel title="Top customers · 30 days (m³)">
+          {summary ? <TopCustomers rows={summary.topCustomers} /> : summaryFailed ? <Empty>Couldn’t load this — retrying</Empty> : <PanelLoading />}
+        </Panel>
+
+        <Panel title="Quality · last 30 days">
+          {summary ? <QualityDonut quality={summary.quality} /> : summaryFailed ? <Empty>Couldn’t load this — retrying</Empty> : <PanelLoading />}
+        </Panel>
+
+        {isAdmin && aging ? (
+          <Panel title="Payments" action={<button onClick={() => navigate('/reports/aging')} className="text-[11px] font-medium text-accent hover:underline">Aging report →</button>}>
+            <div className="reveal flex flex-col gap-2.5">
+              {([
+                ['Receivable 0–30 days', aging.ar.buckets['0-30'], 'text-slate-700'],
+                ['Receivable 31–60 days', aging.ar.buckets['31-60'], 'text-amber-700'],
+                ['Receivable 60+ days', aging.ar.buckets['60+'], 'text-red-700'],
+                ['Payable (all)', aging.ap.total, 'text-slate-700'],
+              ] as const).map(([label, amount, tone]) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-xs">{label}</span>
+                  <span className={cn('font-mono text-xs font-semibold', tone)}>₹{formatINRCompact(amount)}</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        ) : (
+          <Panel title="Low stock">
+            {!summary ? (summaryFailed ? <Empty>Couldn’t load this — retrying</Empty> : <PanelLoading />) : !summary.lowStock.length ? <Empty>All materials above reorder level</Empty> : (
+              <div className="reveal flex flex-col gap-2.5">
+                {summary.lowStock.map(l => (
+                  <div key={l.material} className="flex items-center justify-between">
+                    <span className="text-xs">{l.material}</span>
+                    <span className="font-mono text-xs font-semibold text-red-700">{formatQtyShort(l.qty_on_hand)} / {formatQtyShort(l.reorder_level)}</span>
+                  </div>
+                ))}
+              </div>
             )}
-          </h3>
-          {!dashData?.inTransit?.length ? (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <MapPin size={20} className="text-gray-200" />
-              <p className="text-xs text-gray-400">No trucks on the road right now</p>
+          </Panel>
+        )}
+
+        {/* Live ops */}
+        <Panel
+          title="Trucks in transit"
+          action={inTransit.length > 0 && <span className="tint-pill bg-accent-light text-accent">{inTransit.length}</span>}
+        >
+          {!inTransit.length ? (
+            <div className="flex h-[120px] flex-col items-center justify-center gap-2 text-center">
+              <MapPin size={20} className="text-slate-200" />
+              <p className="text-xs text-slate-400">No trucks on the road right now</p>
             </div>
           ) : (
-            <div className="max-h-[220px] space-y-1.5 overflow-y-auto pr-1">
-              {dashData.inTransit.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-2.5 py-2">
+            <div className="reveal max-h-[220px] space-y-1.5 overflow-y-auto pr-1">
+              {inTransit.map(c => (
+                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-page px-2.5 py-2">
                   <div className="min-w-0">
-                    <p className="truncate font-mono text-xs font-medium text-gray-800">{c.vehicle_no ?? c.challan_no}</p>
-                    <p className="truncate text-[11px] text-gray-400">{c.customer_name ?? '—'}</p>
+                    <p className="truncate font-mono text-xs font-medium">{c.vehicle_no ?? c.challan_no}</p>
+                    <p className="truncate text-[11px] text-slate-400">{c.customer_name ?? '—'}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     {c.site_in ? (
@@ -415,137 +394,53 @@ export default function DashboardPage() {
                     ) : c.eta?.etaAt ? (
                       <>
                         <span className="flex items-center gap-1 text-[11px] font-medium text-accent"><Clock size={10} /> {formatTime(c.eta.etaAt)}</span>
-                        {c.eta.travelMinutes != null && (
-                          <p className="text-[10px] text-gray-400">{formatMinutes(c.eta.travelMinutes)} to go</p>
-                        )}
+                        {c.eta.travelMinutes != null && <p className="text-[10px] text-slate-400">{formatMinutes(c.eta.travelMinutes)} to go</p>}
                       </>
-                    ) : <span className="text-[11px] text-gray-300">—</span>}
+                    ) : <span className="text-[11px] text-slate-300">—</span>}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </Card>
-      </div>
+        </Panel>
 
-      {/* AR/AP aging — admin only, same as before */}
-      {isAdmin && aging && (aging.ar.total > 0 || aging.ap.total > 0) && (
-        <Card padding="sm" onClick={() => navigate('/reports/aging')} className="cursor-pointer transition-shadow hover:shadow-md">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-              <Scale size={14} className="text-gray-400" /> AR/AP Aging
-            </h3>
-            <span className="text-[11px] text-accent hover:underline">View full report →</span>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <AgingBar label="Receivable (AR)" buckets={aging.ar.buckets} total={aging.ar.total} tint="bg-amber-500" />
-            <AgingBar label="Payable (AP)" buckets={aging.ap.buckets} total={aging.ap.total} tint="bg-sky-500" />
-          </div>
-        </Card>
-      )}
-
-      {/* 4 — Reference detail */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card padding="sm" className="xl:col-span-2">
-          <h3 className="mb-4 text-sm font-semibold text-gray-800">Top Customers — Last 30 Days (cum)</h3>
-          {topCustomersChart.length === 0 ? (
-            <p className="flex h-[200px] items-center justify-center text-xs text-gray-400">No dispatches in the last 30 days</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={topCustomersChart} barSize={24} margin={{ left: -20 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <Tooltip {...CHART_TOOLTIP} formatter={(v: number) => [`${formatQty(v)} cum`, 'Volume']} cursor={{ fill: '#F9FAFB' }} />
-                <Bar dataKey="qty" fill="#E8630A" radius={[3, 3, 0, 0]} name="Cum" />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
-
-        <Card padding="sm">
-          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-            <FlaskConical size={14} className="text-gray-400" /> Quality — Last 30 Days
-          </h3>
-          {summary?.quality.passRate == null ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <FlaskConical size={20} className="text-gray-200" />
-              <p className="text-xs text-gray-400">No cube tests recorded</p>
+        <Panel title="Recent challans" action={<button onClick={() => navigate('/sales/challans')} className="text-[11px] font-medium text-accent hover:underline">View all →</button>}>
+          {!dashData?.challans?.length ? <Empty>No challans today</Empty> : (
+            <div className="reveal divide-y divide-gray-100">
+              {dashData.challans.slice(0, 6).map((c: any) => (
+                <button
+                  key={c.id}
+                  onClick={() => navigate(`/sales/challans/${c.id}/edit`)}
+                  className="flex w-full items-center justify-between gap-2 py-2 text-left transition-colors hover:bg-page"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-xs font-medium">{c.challan_no}</p>
+                    <p className="truncate text-[11px] text-slate-400">{c.customer_name ?? '—'}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-mono text-xs font-medium text-slate-700">{formatQtyShort(Number(c.qty))} m³</p>
+                    <p className="text-[11px] text-slate-400">{c.grade_name ?? '—'}</p>
+                  </div>
+                </button>
+              ))}
             </div>
-          ) : (
-            <>
-              <div className="flex items-baseline gap-1">
-                <span className={`font-mono text-[26px] font-bold leading-none ${summary.quality.passRate >= 95 ? 'text-green-600' : summary.quality.passRate >= 85 ? 'text-amber-600' : 'text-red-600'}`}>
-                  {summary.quality.passRate}
-                </span>
-                <span className="text-sm font-medium text-gray-400">% pass</span>
-              </div>
-              <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-gray-100">
-                <div className="bg-green-500" style={{ width: `${summary.quality.passRate}%` }} />
-                <div className="bg-red-400" style={{ width: `${100 - summary.quality.passRate}%` }} />
-              </div>
-              <p className="mt-2 text-[11px] text-gray-400">
-                {summary.quality.passed} passed · {summary.quality.failed} failed
-              </p>
-            </>
           )}
-        </Card>
+        </Panel>
       </div>
 
       {/* Vehicle utilization */}
-      <Card padding="sm">
-        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-          <Package size={14} className="text-gray-400" /> Vehicle Utilization — Today
-        </h3>
-        {!summary?.vehicleUtilization.length ? (
-          <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <Package size={22} className="text-gray-200" />
-            <p className="text-xs text-gray-400">No trips dispatched today yet</p>
-          </div>
-        ) : (
+      {!!summary?.vehicleUtilization.length && (
+        <Panel title="Vehicle utilisation · today">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {summary.vehicleUtilization.map(v => (
-              <div key={v.vehicleId ?? v.vehicleNo} className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
-                <p className="font-mono text-xs font-medium text-gray-800">{v.vehicleNo ?? '—'}</p>
-                <p className="text-[11px] text-gray-500">{v.trips} trips · {formatQty(v.totalQty)} cum</p>
+              <div key={v.vehicleId ?? v.vehicleNo} className="rounded-lg border border-gray-100 bg-page px-3 py-2">
+                <p className="font-mono text-xs font-medium">{v.vehicleNo ?? '—'}</p>
+                <p className="text-[11px] text-slate-500">{v.trips} trips · {formatQtyShort(v.totalQty)} m³</p>
               </div>
             ))}
           </div>
-        )}
-      </Card>
-
-      {/* Recent challans — reference tail, lowest priority */}
-      <Card padding="sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-            <FileText size={14} className="text-gray-400" /> Recent Challans
-          </h3>
-          <button onClick={() => navigate('/sales/challans')} className="text-[11px] text-accent hover:underline">
-            View all →
-          </button>
-        </div>
-        {!dashData?.challans?.length ? (
-          <p className="py-6 text-center text-xs text-gray-400">No challans today</p>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {dashData.challans.slice(0, 6).map((c: any) => (
-              <button
-                key={c.id}
-                onClick={() => navigate(`/sales/challans/${c.id}/edit`)}
-                className="flex w-full items-center justify-between gap-2 py-2 text-left transition-colors hover:bg-gray-50"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-mono text-xs font-medium text-gray-800">{c.challan_no}</p>
-                  <p className="truncate text-[11px] text-gray-400">{c.customer_name ?? '—'}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-mono text-xs font-medium text-gray-700">{formatQty(c.qty)} cum</p>
-                  <p className="text-[11px] text-gray-400">{c.grade_name ?? '—'}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </Card>
+        </Panel>
+      )}
     </div>
   )
 }

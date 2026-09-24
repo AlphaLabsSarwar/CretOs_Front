@@ -64,7 +64,7 @@ export default function RmcLoader({
   const s = SIZES[size]
   const clipId = `rmc-drum-clip-${useId()}`
   return (
-    <div className={`flex flex-col items-center justify-center gap-2.5 ${s.wrap} ${className}`}>
+    <div role="status" aria-live="polite" className={`loader-enter flex flex-col items-center justify-center gap-2.5 ${s.wrap} ${className}`}>
       <div className="relative" style={{ width: s.width }}>
         {/* pulsing glow behind the truck */}
         <div

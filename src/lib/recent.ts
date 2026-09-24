@@ -5,7 +5,7 @@ import { describeScreen, type ScreenInfo } from '@/lib/workspaces'
 // (a shared browser must not show one person's history to the next); labels,
 // icons and permissions are resolved from NAV at read time, so a renamed
 // screen or a revoked module is reflected immediately.
-const MAX = 3
+const MAX = 4
 
 const key = () => `cretos_recent_${authStore.getUser()?.id ?? 'anon'}`
 

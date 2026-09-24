@@ -115,6 +115,15 @@ export default function ChallanPrintPage() {
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [id])
 
+  // Must stay above the loading early-return below: hooks have to run in the
+  // same order on every render (this one used to sit after it and crashed the
+  // page as soon as the challan loaded).
+  useEffect(() => {
+    if (!challan?.tracking_code) { setPassportQrUrl(null); return }
+    const url = `${window.location.origin}/passport/${challan.tracking_code}`
+    QRCode.toDataURL(url, { margin: 0, width: 88 }).then(setPassportQrUrl).catch(() => setPassportQrUrl(null))
+  }, [challan?.tracking_code])
+
   if (isLoading || !challan) {
     return (
       <div className="flex min-h-screen items-center justify-center text-xs text-gray-400">
@@ -140,12 +149,6 @@ export default function ChallanPrintPage() {
     await navigator.clipboard.writeText(url)
     toast({ variant: 'success', title: 'Batch passport link copied' })
   }
-
-  useEffect(() => {
-    if (!challan?.tracking_code) { setPassportQrUrl(null); return }
-    const url = `${window.location.origin}/passport/${challan.tracking_code}`
-    QRCode.toDataURL(url, { margin: 0, width: 88 }).then(setPassportQrUrl).catch(() => setPassportQrUrl(null))
-  }, [challan?.tracking_code])
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 print:bg-white print:py-0">

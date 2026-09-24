@@ -96,7 +96,7 @@ export default function DataTable<T extends { id: string }>({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="rows-enter">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={columns.length} />)
               : data.length === 0

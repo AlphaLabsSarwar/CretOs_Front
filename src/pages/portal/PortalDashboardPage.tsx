@@ -21,7 +21,7 @@ function InvoicesTab() {
   if (isLoading) return <RmcLoader size="sm" />
   if (!data?.length) return <p className="text-xs text-gray-400">No invoices yet.</p>
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div className="reveal overflow-hidden rounded-xl border border-gray-200 bg-white">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
@@ -56,7 +56,7 @@ function StatementTab() {
   if (isLoading) return <RmcLoader size="sm" />
   if (!data) return null
   return (
-    <div>
+    <div className="reveal">
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
           <p className="text-[11px] uppercase tracking-wide text-gray-400">Opening Balance</p>
@@ -109,7 +109,7 @@ function DeliveriesTab() {
   if (isLoading) return <RmcLoader size="sm" />
   if (!data?.length) return <p className="text-xs text-gray-400">No deliveries yet.</p>
   return (
-    <div className="space-y-2">
+    <div className="reveal space-y-2">
       {data.map(d => (
         <div key={d.id} className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
           <div className="flex items-center gap-3">

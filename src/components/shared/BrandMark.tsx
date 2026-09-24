@@ -23,15 +23,15 @@ export default function BrandMark({ tone = 'dark', size = 'md', onClick }: { ton
         <img
           src={companyLogoUrl(companyId)}
           alt={user?.company?.name ?? 'Company logo'}
-          className={cn('rounded-lg object-contain', size === 'lg' ? 'h-9 w-9' : 'h-7 w-7', tone === 'dark' && 'bg-white/10')}
+          className={cn('rounded-lg object-contain', size === 'lg' ? 'h-[34px] w-[34px] rounded-[10px]' : 'h-7 w-7', tone === 'dark' && 'bg-white/10')}
           onError={() => setFailedVersion(version)}
         />
       ) : (
-        <div className={cn('bg-accent rounded-lg flex items-center justify-center', size === 'lg' ? 'h-9 w-9' : 'h-7 w-7')}>
+        <div className={cn('bg-accent rounded-lg flex items-center justify-center', size === 'lg' ? 'h-[34px] w-[34px] rounded-[10px]' : 'h-7 w-7')}>
           <span className={cn('text-white font-bold', size === 'lg' ? 'text-base' : 'text-xs')}>C</span>
         </div>
       )}
-      <span className={cn('font-bold tracking-tight', size === 'lg' ? 'text-2xl sm:text-[26px]' : 'text-base', tone === 'dark' ? 'text-white' : 'text-gray-900 dark:text-white')}>CretOS</span>
+      <span className={cn('font-bold tracking-tight', size === 'lg' ? 'text-xl font-extrabold tracking-[-0.01em] sm:text-[21px]' : 'text-base', tone === 'dark' ? 'text-white' : 'text-gray-900 dark:text-white')}>CretOS</span>
     </Link>
   )
 }

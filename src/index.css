@@ -5,11 +5,15 @@
 @layer base {
   * { @apply border-gray-200; }
   body {
-    @apply bg-gray-50 text-gray-900 text-sm;
+    @apply bg-page text-gray-900 text-sm;
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 { @apply font-semibold; }
+  button:not(:disabled):active, a[class*="rounded"]:active { scale: 0.97; }
+  @media (prefers-reduced-motion: reduce) {
+    button:not(:disabled):active, a[class*="rounded"]:active { scale: none; }
+  }
 }
 
 @layer components {
@@ -78,26 +82,146 @@
     padding: 3px 6px; border-radius: 6px; background: rgb(17 19 24 / 0.88); color: #fff;
     font: 600 10.5px/1 'JetBrains Mono', ui-monospace, monospace;
   }
+  /* Dark "command center" map (Live Tracking). The standard OSM tiles are
+     re-tinted in CSS instead of switching to a separate dark tile provider;
+     markers, labels and popups sit in other panes and keep their colours. */
+  .trk-dark.leaflet-container { background: #0D1016; }
+  .trk-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.78) contrast(0.92) saturate(0.35); }
+  .trk-dark .leaflet-control-zoom a { background: #14161B; color: #E7E9EE; border-color: rgb(255 255 255 / 0.09); }
+  .trk-dark .leaflet-control-zoom a:hover { background: #1E2028; }
+  .trk-dark .leaflet-control-attribution { background: rgb(20 22 27 / 0.85); color: #8B93A3; }
+  .trk-dark .leaflet-control-attribution a { color: #AEB4BF; }
+  /* Same re-tint for the Mappls (MapmyIndia) vector map: only its canvas is
+     filtered — markers are HTML elements outside it and keep their colours. */
+  .trk-dark canvas { filter: invert(1) hue-rotate(180deg) brightness(0.78) contrast(0.92) saturate(0.35); }
+  .trk-dark .trk-marker { cursor: pointer; }
   @media (prefers-reduced-motion: reduce) {
     .trk-pulse { display: none; }
     .trk-badge { transition: none; }
   }
   .row-actions { @apply opacity-0 transition-opacity; }
   tr:hover .row-actions { @apply opacity-100; }
+  /* Sidebar rows. A single-screen workspace (Dashboard, Fleet, ...) is one
+     .sidebar-item; a multi-screen workspace lists its screens as
+     .sidebar-subitem under an uppercase label. Active = accent left rule on
+     a raised row. The rule is an inset shadow rather than a border, so it
+     fades from the old row to the new one instead of jumping. */
   .sidebar-item {
-    @apply flex items-center gap-2.5 px-4 py-2 text-sm rounded-none
-           text-sidebar-text hover:text-white hover:bg-sidebar-item hover:pl-[18px]
-           transition-all duration-150 cursor-pointer;
+    @apply flex items-center gap-2.5 px-[18px] py-2.5 text-[13px] font-medium rounded-none
+           text-sidebar-text hover:text-white hover:bg-sidebar-item cursor-pointer;
+    transition: color 200ms ease-out, background-color 200ms ease-out, box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .sidebar-item.active {
-    @apply text-white bg-sidebar-item border-l-[3px] border-accent;
+    @apply text-white bg-sidebar-item;
+    box-shadow: inset 3px 0 0 theme('colors.accent.DEFAULT');
   }
+  .sidebar-item svg { transition: color 200ms ease-out; }
+  .sidebar-item.active svg { @apply text-accent; }
   .sidebar-subitem {
-    @apply flex items-center gap-2 pl-10 pr-4 py-1.5 text-xs
-           text-sidebar-text hover:text-white hover:bg-sidebar-item hover:pl-11
-           transition-all duration-150 cursor-pointer rounded-none;
+    @apply flex items-center pl-[43px] pr-[18px] py-[7px] text-[12.5px]
+           text-sidebar-text hover:text-white hover:bg-sidebar-item cursor-pointer rounded-none;
+    transition: color 200ms ease-out, background-color 200ms ease-out, box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .sidebar-subitem.active { @apply text-white; }
+  .sidebar-subitem.active {
+    @apply text-white font-semibold bg-sidebar-item;
+    box-shadow: inset 3px 0 0 theme('colors.accent.DEFAULT');
+  }
+
+  /* ── Motion ────────────────────────────────────────────────────────────
+     One easing curve for the whole app (fast out, long soft settle).
+     Page transitions use `backwards` fill, so once an animation ends the
+     element carries no transform — fixed drawers and sticky form footers
+     inside a page keep positioning against the viewport as usual. */
+  .route-view > *,
+  .route-view > * > *,
+  .route-stagger > * {
+    animation: route-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .route-view > * { animation-name: route-fade; animation-duration: 320ms; }
+  /* The page's own sections arrive in a quick cascade. */
+  .route-view > * > :nth-child(2), .route-stagger > :nth-child(2) { animation-delay: 45ms; }
+  .route-view > * > :nth-child(3), .route-stagger > :nth-child(3) { animation-delay: 90ms; }
+  .route-view > * > :nth-child(4), .route-stagger > :nth-child(4) { animation-delay: 135ms; }
+  .route-view > * > :nth-child(5), .route-stagger > :nth-child(5) { animation-delay: 180ms; }
+  .route-view > * > :nth-child(n+6), .route-stagger > :nth-child(n+6) { animation-delay: 220ms; }
+  @keyframes route-fade { from { opacity: 0; } }
+  @keyframes route-rise { from { opacity: 0; transform: translateY(10px); } }
+
+  /* Entering the workspace shell (from the launcher or sign-in). */
+  .shell-enter { animation: shell-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+  @keyframes shell-in { from { opacity: 0; transform: translateX(-14px); } }
+  /* A workspace's screen list re-entering when you switch workspace. */
+  .nav-enter > * { animation: route-rise 360ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+  .nav-enter > :nth-child(2) { animation-delay: 30ms; }
+  .nav-enter > :nth-child(3) { animation-delay: 60ms; }
+  .nav-enter > :nth-child(n+4) { animation-delay: 90ms; }
+  /* The previous page / screen fading out over the next one
+     (components/shared/TransitionLayers). Short and ease-in, so it's gone by
+     the time the incoming page's cascade gets going. */
+  .page-leave { animation: page-leave 170ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+  @keyframes page-leave { to { opacity: 0; transform: translateY(-8px) scale(0.99); } }
+  .realm-leave { animation: realm-leave 220ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+  @keyframes realm-leave { to { opacity: 0; transform: scale(1.015); } }
+  /* Drawers sliding closed (lib/usePresence). */
+  .drawer-leave { animation: drawer-leave 200ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+  @keyframes drawer-leave { to { opacity: 0; transform: translateX(24px); } }
+  .backdrop-leave { animation: route-fade 200ms ease-in reverse forwards; }
+  /* Tab panels cross in. */
+  .tab-enter { animation: route-rise 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+
+  /* Loaders. The truck loader waits 140ms before easing in, so a load that
+     finishes quickly never flashes it at all; when data arrives, the content
+     that replaces it rises in via the page rules above (.route-view), and
+     table rows fade in with a short cascade. */
+  .loader-enter { animation: loader-in 360ms cubic-bezier(0.22, 1, 0.36, 1) 140ms backwards; }
+  @keyframes loader-in { from { opacity: 0; transform: translateY(6px) scale(0.94); } }
+  /* Button spinner: pops in immediately (it's feedback for a click) and spins. */
+  .inline-loader {
+    transform-origin: center;
+    animation: inline-loader-in 180ms cubic-bezier(0.22, 1, 0.36, 1) backwards, inline-loader-spin 0.9s linear infinite;
+  }
+  @keyframes inline-loader-in { from { opacity: 0; scale: 0.6; } }
+  @keyframes inline-loader-spin { to { transform: rotate(360deg); } }
+  /* Table rows (skeletons and real rows alike) fade in top-down. */
+  .rows-enter > tr { animation: route-fade 280ms ease-out backwards; }
+  .rows-enter > tr:nth-child(2) { animation-delay: 25ms; }
+  .rows-enter > tr:nth-child(3) { animation-delay: 50ms; }
+  .rows-enter > tr:nth-child(4) { animation-delay: 75ms; }
+  .rows-enter > tr:nth-child(5) { animation-delay: 100ms; }
+  .rows-enter > tr:nth-child(6) { animation-delay: 125ms; }
+  .rows-enter > tr:nth-child(n+7) { animation-delay: 150ms; }
+  /* Content that swaps in for a loader deeper inside a card. */
+  .reveal { animation: route-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .route-view > *, .route-view > * > *, .route-stagger > *,
+    .shell-enter, .nav-enter > *, .tab-enter,
+    .loader-enter, .rows-enter > tr, .reveal { animation: none; }
+    .inline-loader { animation: inline-loader-spin 0.9s linear infinite; }
+    .page-leave, .realm-leave, .drawer-leave, .backdrop-leave { animation-duration: 1ms; }
+    .sidebar-item, .sidebar-subitem { transition: none; }
+  }
+
+  /* Shared surfaces from the product design: KPI tile, panel, filter pill. */
+  .kpi-tile {
+    @apply rounded-xl border border-gray-200 bg-white p-3.5;
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+  }
+  .kpi-tile:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -12px rgb(15 23 42 / 0.15); }
+  .kpi-label { @apply text-[10.5px] font-semibold uppercase tracking-[0.05em] text-slate-400; }
+  .kpi-value { @apply mt-1.5 font-mono text-[19px] font-bold leading-tight text-slate-900; }
+  .panel { @apply rounded-xl border border-gray-200 bg-white; }
+  .panel-title { @apply text-[13px] font-bold text-slate-900; }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-[5px] text-[11px] font-medium text-slate-600
+           transition-colors duration-150 hover:bg-slate-200;
+  }
+  .pill.active { @apply bg-accent text-white hover:bg-accent; }
+  .tint-pill { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold; }
+  @media (prefers-reduced-motion: reduce) {
+    .kpi-tile { transition: none; }
+    .kpi-tile:hover { transform: none; }
+  }
 
   /* Reusable hover-lift for card-style containers (panels, summary bars) */
   .card-lift { @apply transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md; }

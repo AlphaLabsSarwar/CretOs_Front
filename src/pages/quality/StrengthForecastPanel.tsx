@@ -97,7 +97,7 @@ export default function StrengthForecastPanel({ branchId }: { branchId?: string 
           {isLoading ? (
             <RmcLoader size="sm" />
           ) : (
-            <>
+            <div className="reveal">
               <p className="mb-3 text-xs text-gray-500">
                 Predicts each cube's 28-day break from its own 7-day result, so a likely failure surfaces about three weeks early instead of at the real test. Not a substitute for the actual 28-day break — a forecast, not a lab result.
               </p>
@@ -133,7 +133,7 @@ export default function StrengthForecastPanel({ branchId }: { branchId?: string 
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
       )}

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Bell, ChevronDown, HelpCircle, LogOut, Moon, Search, Sun } from 'lucide-react'
+import { Bell, ChevronDown, HelpCircle, LogOut, Moon, Plus, Search, Sun } from 'lucide-react'
 import { api } from '@/lib/api'
 import { authStore } from '@/store/auth'
 import { permissionsStore } from '@/store/permissions'
@@ -14,7 +14,7 @@ import LiveClock from '@/components/shared/LiveClock'
 interface AlertsData { creditBreaches: unknown[]; lowStock: unknown[] }
 
 const MENU_ITEM = 'flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-gray-100 dark:text-slate-200 dark:data-[highlighted]:bg-slate-800'
-const ICON_BUTTON = 'relative rounded-full p-2 text-slate-900 transition-colors hover:bg-gray-100 dark:text-slate-100 dark:hover:bg-slate-800'
+const ICON_BUTTON = 'relative flex h-[38px] w-[38px] items-center justify-center rounded-full text-slate-900 transition-colors hover:bg-gray-100 dark:text-slate-100 dark:hover:bg-slate-800'
 
 function initials(name?: string) {
   const parts = (name ?? '').trim().split(/\s+/).filter(Boolean)
@@ -22,13 +22,15 @@ function initials(name?: string) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
 }
 
-// Top bar for the workspace launcher: brand + live clock, global search,
-// theme, alerts, account. Module screens keep their own sidebar layout
-// (AppLayout) — this is only the home screen's chrome.
+// Top bar for the workspace launcher: brand + company/plant, global search,
+// live clock, theme, alerts, New Dispatch, account. Module screens keep their
+// own sidebar layout (AppLayout) — this is only the home screen's chrome.
 export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   const user = authStore.getUser()
   const canSeeAlerts = permissionsStore.has('reports.alerts')
+  const canDispatch = permissionsStore.has('sales.challans')
   const adminLinks = getAdminLinks()
+  const context = [user?.company?.name, user?.branch?.name].filter(Boolean).join(' · ')
 
   // Same query key + endpoint as pages/reports/AlertsPage.tsx, so opening the
   // bell right after reuses the cached result instead of refetching.
@@ -48,35 +50,39 @@ export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggl
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white px-4 sm:h-[74px] sm:gap-6 sm:px-9 dark:border-slate-800 dark:bg-slate-900">
-      {/* Brand, then the clock — same size and weight as the wordmark. That is
-          ~355px wide, so it only shows from xl up; the search box takes
-          whatever room is left and is capped smaller there to make space. */}
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white px-4 sm:h-[76px] sm:gap-5 sm:px-10 dark:border-slate-800 dark:bg-slate-900">
       <BrandMark tone="light" size="lg" />
-      <LiveClock className="hidden shrink-0 whitespace-nowrap text-2xl font-bold tabular-nums tracking-tight text-slate-600 xl:block sm:text-[26px] dark:text-slate-300" />
+      {context && (
+        <>
+          <span className="hidden h-[22px] w-px shrink-0 bg-gray-200 lg:block dark:bg-slate-700" />
+          <span className="hidden max-w-[260px] shrink-0 truncate text-xs text-slate-600 lg:block dark:text-slate-300">{context}</span>
+        </>
+      )}
 
       <div className="flex min-w-0 flex-1 justify-center">
         {/* Opens the same ⌘K command palette the module screens use. */}
         <button
           onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
           aria-label="Search"
-          className="flex h-10 w-full items-center gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 text-left text-sm text-slate-500 transition-colors hover:border-gray-300 hover:bg-white sm:h-[50px] sm:max-w-[38rem] sm:text-base xl:max-w-[26rem] dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+          className="flex h-10 w-full max-w-[420px] items-center gap-2.5 rounded-[10px] border border-gray-200 bg-page px-3.5 text-left text-[13px] text-slate-400 transition-colors hover:border-slate-300 sm:h-11 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-slate-600"
         >
-          <Search size={22} className="shrink-0 text-slate-700 dark:text-slate-300" />
+          <Search size={17} className="shrink-0" />
           <span className="truncate sm:hidden">Search</span>
-          <span className="hidden truncate sm:inline">Search (e.g., customer, order no., site)</span>
+          <span className="hidden truncate sm:inline">Search customer, order no., truck, site…</span>
           <kbd className="ml-auto hidden rounded border border-gray-300 bg-white px-1.5 text-[10px] text-gray-400 md:inline dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">⌘K</kbd>
         </button>
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+      <LiveClock timeOnly className="hidden shrink-0 font-mono text-[15px] font-semibold tabular-nums text-slate-600 xl:block dark:text-slate-300" />
+
+      <div className="flex shrink-0 items-center gap-1">
         <button
           onClick={onToggleTheme}
           aria-label={`Switch to ${nextTheme} theme`}
           title={`Switch to ${nextTheme} theme`}
           className={ICON_BUTTON}
         >
-          {theme === 'dark' ? <Sun size={26} strokeWidth={1.75} /> : <Moon size={26} strokeWidth={1.75} />}
+          {theme === 'dark' ? <Sun size={19} strokeWidth={1.75} /> : <Moon size={19} strokeWidth={1.75} />}
         </button>
 
         {canSeeAlerts && (
@@ -86,20 +92,29 @@ export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggl
             title="Alerts"
             className={ICON_BUTTON}
           >
-            <Bell size={28} strokeWidth={1.75} />
-            {alertCount > 0 && <span className="absolute right-2 top-2 h-3 w-3 rounded-full bg-accent ring-2 ring-white dark:ring-slate-900" />}
+            <Bell size={19} strokeWidth={1.75} />
+            {alertCount > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-accent ring-2 ring-white dark:ring-slate-900" />}
+          </Link>
+        )}
+
+        {canDispatch && (
+          <Link
+            to="/quick-dispatch"
+            className="ml-1 hidden h-[38px] items-center gap-1.5 rounded-full border-[1.5px] border-accent bg-white pl-[11px] pr-3.5 text-xs font-semibold text-accent transition-colors hover:bg-accent-light sm:flex dark:bg-transparent dark:hover:bg-accent/10"
+          >
+            <Plus size={14} /> New Dispatch
           </Link>
         )}
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
             aria-label="Account menu"
-            className="flex items-center gap-1.5 rounded-full p-1 outline-none transition-colors hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-accent dark:hover:bg-slate-800"
+            className="ml-1 flex items-center gap-1 rounded-full p-0.5 outline-none transition-colors hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-accent dark:hover:bg-slate-800"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white sm:h-[52px] sm:w-[52px] sm:text-base dark:bg-slate-600">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-700 text-[13px] font-semibold text-white dark:bg-slate-600">
               {initials(user?.name)}
             </span>
-            <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />
+            <ChevronDown size={14} className="text-slate-500 dark:text-slate-400" />
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content align="end" sideOffset={8} className="z-50 w-64 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900">

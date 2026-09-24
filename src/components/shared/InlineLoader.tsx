@@ -6,7 +6,7 @@ export default function InlineLoader({ className = '', size = 13 }: { className?
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      className={`animate-drum-spin ${className}`}
+      className={`inline-loader ${className}`}
       style={{ transformOrigin: 'center' }}
     >
       <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.25" />
